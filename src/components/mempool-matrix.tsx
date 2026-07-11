@@ -17,6 +17,7 @@ import type { MempoolSnapshot } from "@/lib/mempool";
 import {
   createDrop,
   mergeTransactions,
+  nextDropLifecycle,
   shortTxid,
   type MatrixDrop,
   type MempoolTransaction,
@@ -464,9 +465,17 @@ function drawMatrix(
   blockProgress: number,
 ) {
   context.textAlign = "center"; context.textBaseline = "middle";
+  const floorY = ambient ? height - 28 : height - (width < 640 ? 182 : 112);
   for (const drop of drops) {
-    if (!paused) drop.y += drop.speed * dt * (ambient ? 0.72 : 1);
-    if (blockProgress >= 0) {
+    if (!paused) {
+      const resetY = -80 - ((drop.x + drop.cycle * 97) % Math.max(140, height * 0.55));
+      const next = nextDropLifecycle(drop, dt * (ambient ? 0.72 : 1), floorY, resetY);
+      drop.phase = next.phase;
+      drop.phaseAge = next.phaseAge;
+      drop.y = next.y;
+      drop.cycle = next.cycle;
+    }
+    if (blockProgress >= 0 && drop.phase === "falling") {
       const line = height * (1 - blockProgress);
       drop.y += (line - drop.y) * Math.min(0.12, blockProgress * 0.15);
     }
@@ -478,16 +487,72 @@ function drawMatrix(
     context.font = `${near ? 700 : 500} ${drop.fontSize}px ui-monospace, monospace`;
     context.shadowBlur = near ? 18 : palette.glow;
     context.shadowColor = palette.shadow;
+
+    if (drop.phase === "dissolve") {
+      drawTxDissolve(context, drop, bytes, visible, charStep, palette);
+      continue;
+    }
+
+    const impactProgress = drop.phase === "impact" ? Math.min(1, drop.phaseAge / 0.32) : 0;
+    const compression = drop.phase === "impact"
+      ? 1 - Math.sin(impactProgress * Math.PI) * 0.72
+      : 1;
     for (let index = 0; index < visible; index += 1) {
       const fade = 1 - index / visible;
       context.fillStyle = index === 0 ? palette.head : palette.trail(fade * drop.opacity);
-      context.fillText(bytes[index], drop.x, drop.y - index * charStep);
+      context.fillText(bytes[index], drop.x, drop.y - index * charStep * compression);
     }
-    if (drop.y - visible * charStep > height + 40) {
-      const fresh = createDrop(drop, width, height); drop.x = fresh.x; drop.y = fresh.y;
-    }
+    if (drop.phase === "impact") drawTxRipple(context, drop.x, floorY, impactProgress, palette.dot);
   }
   context.shadowBlur = 0;
+}
+
+function drawTxRipple(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  progress: number,
+  color: string,
+) {
+  context.save();
+  context.globalAlpha = Math.max(0, 0.8 * (1 - progress));
+  context.strokeStyle = color;
+  context.lineWidth = 1.5;
+  context.shadowBlur = 18;
+  context.shadowColor = color;
+  context.beginPath();
+  context.ellipse(x, y, 10 + progress * 74, 2 + progress * 10, 0, 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+}
+
+function drawTxDissolve(
+  context: CanvasRenderingContext2D,
+  drop: MatrixDrop,
+  bytes: string[],
+  visible: number,
+  charStep: number,
+  palette: ReturnType<typeof feePalette>,
+) {
+  const progress = Math.min(1, drop.phaseAge / 0.72);
+  const eased = 1 - Math.pow(1 - progress, 3);
+  drawTxRipple(context, drop.x, drop.y, Math.min(1, 0.25 + progress), palette.dot);
+  context.save();
+  context.globalAlpha = Math.max(0, 1 - progress);
+  for (let index = 0; index < visible; index += 1) {
+    const seed = Number.parseInt(drop.txid.slice(index * 2, index * 2 + 2), 16) / 255;
+    const angle = seed * Math.PI * 2 + index * 0.7;
+    const distance = eased * (22 + index * 4);
+    const x = drop.x + Math.cos(angle) * distance;
+    const y = drop.y - index * charStep * (1 - eased) + Math.sin(angle) * distance + eased * eased * 32;
+    context.save();
+    context.translate(x, y);
+    context.rotate((seed - 0.5) * eased * 1.8);
+    context.fillStyle = index === 0 ? palette.head : palette.trail((1 - progress) * drop.opacity);
+    context.fillText(bytes[index], 0, 0);
+    context.restore();
+  }
+  context.restore();
 }
 
 function drawConstellation(context: CanvasRenderingContext2D, drops: MatrixDrop[], width: number, height: number, dt: number, frame: number, paused: boolean) {

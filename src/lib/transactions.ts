@@ -6,10 +6,18 @@ export type MempoolTransaction = {
   feeRate: number;
 };
 
-export type MatrixDrop = MempoolTransaction & {
-  x: number;
+export type DropPhase = "falling" | "impact" | "dissolve";
+
+export type DropLifecycle = {
+  phase: DropPhase;
+  phaseAge: number;
   y: number;
   speed: number;
+  cycle: number;
+};
+
+export type MatrixDrop = MempoolTransaction & DropLifecycle & {
+  x: number;
   opacity: number;
   fontSize: number;
   trailLength: number;
@@ -60,6 +68,33 @@ function hashNumber(value: string, offset: number): number {
   return Number.parseInt(sample, 16) / 0xffffffff;
 }
 
+export function nextDropLifecycle(
+  state: DropLifecycle,
+  dt: number,
+  floorY: number,
+  resetY: number,
+): DropLifecycle {
+  if (state.phase === "impact") {
+    const age = state.phaseAge + dt;
+    return age >= 0.32
+      ? { ...state, phase: "dissolve", phaseAge: 0, y: floorY }
+      : { ...state, phaseAge: age, y: floorY };
+  }
+  if (state.phase === "dissolve") {
+    const age = state.phaseAge + dt;
+    return age >= 0.72
+      ? { ...state, phase: "falling", phaseAge: 0, y: resetY, cycle: state.cycle + 1 }
+      : { ...state, phaseAge: age, y: floorY };
+  }
+
+  const distance = floorY - state.y;
+  if (distance <= Math.max(12, state.speed * dt)) {
+    return { ...state, phase: "impact", phaseAge: 0, y: floorY };
+  }
+  const slowFactor = Math.max(0.18, Math.min(1, distance / 120));
+  return { ...state, y: state.y + state.speed * dt * slowFactor };
+}
+
 export function createDrop(
   transaction: MempoolTransaction,
   width: number,
@@ -73,6 +108,9 @@ export function createDrop(
     x: lanePadding + hashNumber(transaction.txid, 0) * availableWidth,
     y: -40 - hashNumber(transaction.txid, 8) * Math.max(100, height * 0.65),
     speed: 42 + feeEnergy * 96 + hashNumber(transaction.txid, 16) * 34,
+    phase: "falling",
+    phaseAge: 0,
+    cycle: 0,
     opacity: 0.38 + feeEnergy * 0.58,
     fontSize: width < 640 ? 10 + hashNumber(transaction.txid, 24) * 3 : 12 + hashNumber(transaction.txid, 24) * 5,
     trailLength: 2 + Math.floor(feeEnergy * 7),

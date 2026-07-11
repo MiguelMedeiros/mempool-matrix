@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createDrop,
   mergeTransactions,
+  nextDropLifecycle,
   normalizeTransaction,
   shortTxid,
 } from "./transactions";
@@ -48,6 +49,25 @@ describe("mergeTransactions", () => {
 });
 
 describe("matrix presentation", () => {
+  it("slows near the floor, impacts, dissolves, then resets above the viewport", () => {
+    const falling = nextDropLifecycle({ phase: "falling", phaseAge: 0, y: 690, speed: 120, cycle: 0 }, 0.1, 700, -200);
+    expect(falling.phase).toBe("impact");
+    expect(falling.y).toBe(700);
+
+    const impact = nextDropLifecycle({ ...falling, phaseAge: 0.31 }, 0.02, 700, -200);
+    expect(impact.phase).toBe("dissolve");
+    expect(impact.phaseAge).toBe(0);
+
+    const dissolved = nextDropLifecycle({ ...impact, phaseAge: 0.71 }, 0.02, 700, -200);
+    expect(dissolved).toMatchObject({ phase: "falling", phaseAge: 0, y: -200, cycle: 1 });
+  });
+
+  it("decelerates a falling txid as it approaches the impact surface", () => {
+    const far = nextDropLifecycle({ phase: "falling", phaseAge: 0, y: 100, speed: 100, cycle: 0 }, 0.1, 700, -200);
+    const near = nextDropLifecycle({ phase: "falling", phaseAge: 0, y: 600, speed: 100, cycle: 0 }, 0.1, 700, -200);
+    expect(far.y - 100).toBeGreaterThan(near.y - 600);
+  });
+
   it("uses deterministic lanes and visual properties for a transaction", () => {
     const normalized = normalizeTransaction(tx)!;
     expect(createDrop(normalized, 390, 844)).toEqual(createDrop(normalized, 390, 844));
