@@ -59,6 +59,12 @@ export function detectBlockEvent(previousHeight: number, block: BlockSummary): B
   return block.height > previousHeight ? block : null;
 }
 
+export function blockAnimationProgress(startedAt: number, now: number, duration = 6_000): number {
+  if (startedAt <= 0 || now < startedAt) return -1;
+  const elapsed = now - startedAt;
+  return elapsed < duration ? elapsed / duration : -1;
+}
+
 export function appendHistory(
   history: ExperienceSnapshot[],
   snapshot: ExperienceSnapshot,

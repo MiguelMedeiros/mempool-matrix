@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appendHistory,
+  blockAnimationProgress,
   classifyFee,
   detectBlockEvent,
   detectHighlights,
@@ -44,6 +45,12 @@ describe("fee language", () => {
 });
 
 describe("block and history events", () => {
+  it("does not animate a block before any block event has started", () => {
+    expect(blockAnimationProgress(0, 3_000)).toBe(-1);
+    expect(blockAnimationProgress(1_000, 4_000, 6_000)).toBe(0.5);
+    expect(blockAnimationProgress(1_000, 8_000, 6_000)).toBe(-1);
+  });
+
   it("emits a cinematic event only when block height advances", () => {
     expect(detectBlockEvent(957_580, { height: 957_581, txCount: 4690, size: 1_556_630, timestamp: 123 }))
       .toMatchObject({ height: 957_581, txCount: 4690 });

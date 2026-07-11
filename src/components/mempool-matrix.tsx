@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  blockAnimationProgress,
   classifyFee,
   detectBlockEvent,
   detectHighlights,
@@ -199,8 +200,7 @@ export function MempoolMatrix() {
       drawBackground(context, width, height, frame, now, pressure.intensity);
       syncDrops(dropsRef.current, transactionsRef.current, width, height);
 
-      const pulseAge = now - blockPulseRef.current;
-      const blockProgress = pulseAge >= 0 && pulseAge < 6000 ? pulseAge / 6000 : -1;
+      const blockProgress = blockAnimationProgress(blockPulseRef.current, now);
       if (modeRef.current === "constellation") {
         drawConstellation(context, dropsRef.current, width, height, dt, frame, pausedRef.current);
       } else if (modeRef.current === "heatmap") {
@@ -333,10 +333,10 @@ export function MempoolMatrix() {
                 <span>{arrivalRate > 0 ? `+${arrivalRate} tx/s` : "sampling"}</span>
               </div>
             </div>
-            <div className="pointer-events-auto flex gap-2">
-              <ControlButton label={audioEnabled ? "sound on" : "sound off"} onClick={toggleAudio} active={audioEnabled} />
-              <ControlButton label={paused ? "resume" : "pause"} onClick={() => setPaused((value) => !value)} />
-              <ControlButton label="⛶" onClick={toggleFullscreen} />
+            <div className="pointer-events-auto flex max-w-[132px] flex-wrap justify-end gap-1 sm:max-w-none sm:flex-nowrap sm:gap-2">
+              <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
+              <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
+              <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
             </div>
           </header>
 
@@ -367,7 +367,7 @@ export function MempoolMatrix() {
               </div>
             )}
 
-            <div className="grid grid-cols-5 gap-2 rounded-2xl border border-emerald-300/10 bg-black/50 p-3 backdrop-blur-xl sm:max-w-3xl sm:gap-4 sm:p-4">
+            <div className="grid grid-cols-3 gap-2 rounded-2xl border border-emerald-300/10 bg-black/50 p-3 backdrop-blur-xl sm:max-w-3xl sm:grid-cols-5 sm:gap-4 sm:p-4">
               <Metric label="transactions" value={formatCompact(snapshot.stats.count)} />
               <Metric label="virtual size" value={`${(snapshot.stats.vsize / 1_000_000).toFixed(1)} MB`} />
               <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} />
@@ -568,8 +568,8 @@ function pressureClass(label: ReturnType<typeof getPressure>["label"]) {
   }[label];
 }
 
-function ControlButton({ label, onClick, active = false }: { label: string; onClick: () => void; active?: boolean }) {
-  return <button onClick={onClick} className={`rounded-full border px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] backdrop-blur-md transition ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}>{label}</button>;
+function ControlButton({ label, mobileLabel, onClick, active = false }: { label: string; mobileLabel?: string; onClick: () => void; active?: boolean }) {
+  return <button aria-label={label} onClick={onClick} className={`rounded-full border px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] backdrop-blur-md transition ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
