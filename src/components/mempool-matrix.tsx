@@ -333,7 +333,7 @@ export function MempoolMatrix() {
                 <span>{arrivalRate > 0 ? `+${arrivalRate} tx/s` : "sampling"}</span>
               </div>
             </div>
-            <div className="pointer-events-auto flex max-w-[132px] flex-wrap justify-end gap-1 sm:max-w-none sm:flex-nowrap sm:gap-2">
+            <div className="pointer-events-auto absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex max-w-[132px] flex-wrap justify-end gap-1 sm:static sm:max-w-none sm:flex-nowrap sm:gap-2">
               <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
               <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
               <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
