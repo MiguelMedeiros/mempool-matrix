@@ -6,7 +6,7 @@ services:
     environment:
       MEMPOOL_API_URL: http://mempool-web/api
     ports:
-      - "${TAILSCALE_IP:-100.67.121.90}:${PORT:-3033}:3000"
+      - "${PORT:-3033}:3000"
     mem_limit: 512m
     networks:
       - bitcoin

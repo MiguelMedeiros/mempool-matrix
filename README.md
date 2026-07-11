@@ -38,4 +38,4 @@ The Compose service joins `bitcoin-docker_default` and reads from `http://mempoo
 docker compose up -d --build
 ```
 
-By default it binds only to the zero Tailscale address on port `3033`.
+By default it publishes port `3033` on `zero`; the host's containerized Tailscale endpoint makes it reachable privately at the zero Tailscale address.
