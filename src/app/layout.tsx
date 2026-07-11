@@ -15,6 +15,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "mempool.matrix — Bitcoin transaction rain",
   description: "A live Matrix-inspired visualization of transactions entering our Bitcoin mempool.",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  appleWebApp: { capable: true, title: "mempool.matrix", statusBarStyle: "black-translucent" },
+};
+
+export const viewport = {
+  themeColor: "#010302",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
 };
 
 export default function RootLayout({

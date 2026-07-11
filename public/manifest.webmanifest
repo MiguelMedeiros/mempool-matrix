@@ -1,0 +1,13 @@
+{
+  "name": "mempool.matrix",
+  "short_name": "tx.matrix",
+  "description": "Live Bitcoin mempool transaction rain from our own node.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#010302",
+  "theme_color": "#07150f",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

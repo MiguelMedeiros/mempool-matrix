@@ -4,12 +4,17 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 
 ## Features
 
-- Live transaction polling through a server-side Next.js route
-- Node-backed data via a local mempool.space stack
-- Responsive canvas optimized for desktop and mobile
-- Tap/click transaction inspection
-- Fee-rate-driven motion and luminance
-- Pause/resume controls
+- Five live visual modes: Matrix rain, constellation, fee heatmap, block race, and ambient fullscreen
+- Cinematic new-block events that absorb the transaction field
+- Fee-rate-driven color, brightness, speed, and urgency tiers
+- Mempool pressure atmosphere and transaction arrival-rate telemetry
+- Full transaction inspector with inputs, outputs, RBF, highlights, and local explorer links
+- Rare-event badges for high-value, high-fee, consolidation, and fan-out transactions
+- Optional Web Audio sonification and block vibration on supported mobile devices
+- Five-minute in-session replay timeline plus replay-last-block controls
+- Installable PWA with cached shell and last-known mempool snapshot
+- Responsive canvas and safe-area-aware mobile interface
+- Node-backed data via the local mempool.space stack on `zero`
 - Private Tailscale deployment
 
 ## Local development
