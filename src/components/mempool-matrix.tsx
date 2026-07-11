@@ -393,27 +393,27 @@ export function MempoolMatrix() {
       )}
 
       {searchOpen && (
-        <div className="absolute inset-0 z-[70] flex items-start justify-center bg-black/55 px-3 pt-[max(5rem,env(safe-area-inset-top))] backdrop-blur-sm sm:pt-28">
-          <form onSubmit={searchTransaction} className="w-full max-w-2xl rounded-2xl border border-emerald-300/20 bg-[#021009]/95 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
+        <div className="fixed left-0 top-0 z-[70] flex h-[100dvh] w-[100dvw] max-w-[100dvw] items-start justify-center overflow-hidden bg-black/55 px-3 pt-[max(5rem,env(safe-area-inset-top))] backdrop-blur-sm sm:pt-28">
+          <form onSubmit={searchTransaction} className="box-border w-[calc(100dvw-1.5rem)] max-w-2xl overflow-hidden rounded-2xl border border-emerald-300/20 bg-[#021009]/95 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
                 <div className="font-mono text-[9px] uppercase tracking-[.28em] text-emerald-300/55">transaction search</div>
                 <div className="mt-1 text-sm text-emerald-50/75">Cole um TXID ou uma URL do explorador.</div>
               </div>
-              <button type="button" onClick={() => setSearchOpen(false)} className="font-mono text-xs text-emerald-100/45">close</button>
+              <button type="button" onClick={() => setSearchOpen(false)} className="shrink-0 rounded-full border border-emerald-300/15 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[.12em] text-emerald-100/55">close</button>
             </div>
             <div className="mt-4 flex flex-wrap gap-2 sm:flex-nowrap">
               <input
                 autoFocus
                 value={searchQuery}
                 onChange={(event) => { setSearchQuery(event.target.value); setSearchStatus("idle"); }}
-                placeholder="64-character TXID or explorer URL"
+                placeholder="TXID ou URL do explorador"
                 spellCheck={false}
                 autoCapitalize="none"
                 className="min-w-0 basis-full flex-1 rounded-xl border border-emerald-300/15 bg-black/60 px-3 py-3 font-mono text-xs text-emerald-50 outline-none placeholder:text-emerald-100/20 focus:border-emerald-300/45 sm:basis-auto"
               />
-              <button type="button" onClick={pasteSearch} className="rounded-xl border border-emerald-300/15 bg-emerald-300/5 px-3 font-mono text-[9px] uppercase tracking-[.14em] text-emerald-200/65">paste</button>
-              <button disabled={searchStatus === "loading"} className="rounded-xl border border-emerald-200/40 bg-emerald-300/15 px-4 font-mono text-[9px] uppercase tracking-[.14em] text-white disabled:opacity-50">{searchStatus === "loading" ? "finding" : "find"}</button>
+              <button type="button" onClick={pasteSearch} className="min-h-11 flex-1 rounded-xl border border-emerald-300/15 bg-emerald-300/5 px-3 font-mono text-[9px] uppercase tracking-[.14em] text-emerald-200/65 sm:flex-none">paste</button>
+              <button disabled={searchStatus === "loading"} className="min-h-11 flex-1 rounded-xl border border-emerald-200/40 bg-emerald-300/15 px-4 font-mono text-[9px] uppercase tracking-[.14em] text-white disabled:opacity-50 sm:flex-none">{searchStatus === "loading" ? "finding" : "find"}</button>
             </div>
             {searchStatus === "invalid" && <p className="mt-3 font-mono text-[10px] text-amber-200/75">Informe um TXID válido com 64 caracteres hexadecimais.</p>}
             {searchStatus === "not-found" && <p className="mt-3 font-mono text-[10px] text-rose-200/75">Transação não encontrada no nosso node.</p>}
