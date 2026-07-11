@@ -333,7 +333,7 @@ export function MempoolMatrix() {
                 <span>{arrivalRate > 0 ? `+${arrivalRate} tx/s` : "sampling"}</span>
               </div>
             </div>
-            <div className="pointer-events-auto absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex max-w-[132px] flex-wrap justify-end gap-1 sm:static sm:max-w-none sm:flex-nowrap sm:gap-2">
+            <div className="pointer-events-auto absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex w-[124px] flex-nowrap justify-end gap-1 sm:static sm:w-auto sm:max-w-none sm:gap-2">
               <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
               <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
               <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
@@ -569,7 +569,7 @@ function pressureClass(label: ReturnType<typeof getPressure>["label"]) {
 }
 
 function ControlButton({ label, mobileLabel, onClick, active = false }: { label: string; mobileLabel?: string; onClick: () => void; active?: boolean }) {
-  return <button aria-label={label} onClick={onClick} className={`rounded-full border px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] backdrop-blur-md transition ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
+  return <button aria-label={label} onClick={onClick} className={`min-w-9 rounded-full border px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] backdrop-blur-md transition ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
