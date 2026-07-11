@@ -4,7 +4,7 @@ services:
     container_name: mempool-matrix
     restart: unless-stopped
     environment:
-      MEMPOOL_API_URL: http://mempool-web/api
+      MEMPOOL_API_URL: http://mempool-web:8080/api
     ports:
       - "${PORT:-3033}:3000"
     mem_limit: 512m
