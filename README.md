@@ -5,9 +5,10 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 ## Features
 
 - Five live visual modes: Matrix rain, constellation, fee heatmap, block race, and ambient fullscreen
-- Cinematic new-block events that absorb the transaction field
+- Cinematic new-block events that cross the scene without interrupting the transaction rain
 - Fee-rate-driven color, brightness, speed, and urgency tiers
 - End-of-lane lifecycle: deceleration, surface compression, luminous ripple, hexadecimal fragmentation, and delayed respawn
+- Continuous rain across mobile viewport changes and new-block events; existing drops keep their position and lifecycle
 - Mempool pressure atmosphere and transaction arrival-rate telemetry
 - Full transaction inspector with inputs, outputs, RBF, highlights, and local explorer links
 - Rare-event badges for high-value, high-fee, consolidation, and fan-out transactions

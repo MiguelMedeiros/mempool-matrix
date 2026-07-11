@@ -68,6 +68,21 @@ function hashNumber(value: string, offset: number): number {
   return Number.parseInt(sample, 16) / 0xffffffff;
 }
 
+export function reflowDrops(
+  drops: MatrixDrop[],
+  previous: { width: number; height: number },
+  next: { width: number; height: number },
+): MatrixDrop[] {
+  if (previous.width <= 0 || previous.height <= 0 || next.width <= 0 || next.height <= 0) return drops;
+  const scaleX = next.width / previous.width;
+  const scaleY = next.height / previous.height;
+  return drops.map((drop) => ({
+    ...drop,
+    x: Math.max(0, Math.min(next.width, drop.x * scaleX)),
+    y: drop.y * scaleY,
+  }));
+}
+
 export function nextDropLifecycle(
   state: DropLifecycle,
   dt: number,

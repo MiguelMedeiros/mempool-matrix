@@ -4,6 +4,7 @@ import {
   mergeTransactions,
   nextDropLifecycle,
   normalizeTransaction,
+  reflowDrops,
   shortTxid,
 } from "./transactions";
 
@@ -66,6 +67,26 @@ describe("matrix presentation", () => {
     const far = nextDropLifecycle({ phase: "falling", phaseAge: 0, y: 100, speed: 100, cycle: 0 }, 0.1, 700, -200);
     const near = nextDropLifecycle({ phase: "falling", phaseAge: 0, y: 600, speed: 100, cycle: 0 }, 0.1, 700, -200);
     expect(far.y - 100).toBeGreaterThan(near.y - 600);
+  });
+
+  it("preserves rain lifecycle when a mobile viewport resizes", () => {
+    const drop = {
+      ...createDrop(normalizeTransaction(tx)!, 390, 844),
+      x: 195,
+      y: 422,
+      phase: "dissolve" as const,
+      phaseAge: 0.3,
+      cycle: 4,
+    };
+    const [resized] = reflowDrops([drop], { width: 390, height: 844 }, { width: 844, height: 390 });
+    expect(resized).toMatchObject({
+      txid: drop.txid,
+      phase: "dissolve",
+      phaseAge: 0.3,
+      cycle: 4,
+      x: 422,
+      y: 195,
+    });
   });
 
   it("uses deterministic lanes and visual properties for a transaction", () => {

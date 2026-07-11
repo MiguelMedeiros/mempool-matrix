@@ -18,6 +18,7 @@ import {
   createDrop,
   mergeTransactions,
   nextDropLifecycle,
+  reflowDrops,
   shortTxid,
   type MatrixDrop,
   type MempoolTransaction,
@@ -179,17 +180,20 @@ export function MempoolMatrix() {
     let animationFrame = 0;
     let frame = 0;
     let last = performance.now();
+    let viewport = { width: 0, height: 0 };
 
     const resize = () => {
+      const nextViewport = { width: window.innerWidth, height: window.innerHeight };
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(window.innerWidth * ratio);
-      canvas.height = Math.floor(window.innerHeight * ratio);
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
+      canvas.width = Math.floor(nextViewport.width * ratio);
+      canvas.height = Math.floor(nextViewport.height * ratio);
+      canvas.style.width = `${nextViewport.width}px`;
+      canvas.style.height = `${nextViewport.height}px`;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      dropsRef.current = transactionsRef.current.map((transaction) =>
-        createDrop(transaction, window.innerWidth, window.innerHeight),
-      );
+      dropsRef.current = viewport.width > 0
+        ? reflowDrops(dropsRef.current, viewport, nextViewport)
+        : transactionsRef.current.map((transaction) => createDrop(transaction, nextViewport.width, nextViewport.height));
+      viewport = nextViewport;
     };
 
     const render = (now: number) => {
@@ -219,7 +223,6 @@ export function MempoolMatrix() {
           pausedRef.current,
           modeRef.current === "ambient",
           feesRef.current,
-          blockProgress,
         );
       }
       if (blockProgress >= 0) drawBlockWave(context, width, height, blockProgress);
@@ -462,7 +465,6 @@ function drawMatrix(
   paused: boolean,
   ambient: boolean,
   fees: MempoolSnapshot["fees"],
-  blockProgress: number,
 ) {
   context.textAlign = "center"; context.textBaseline = "middle";
   const floorY = ambient ? height - 28 : height - (width < 640 ? 182 : 112);
@@ -474,10 +476,6 @@ function drawMatrix(
       drop.phaseAge = next.phaseAge;
       drop.y = next.y;
       drop.cycle = next.cycle;
-    }
-    if (blockProgress >= 0 && drop.phase === "falling") {
-      const line = height * (1 - blockProgress);
-      drop.y += (line - drop.y) * Math.min(0.12, blockProgress * 0.15);
     }
     const bytes = drop.txid.match(/.{1,2}/g) ?? [];
     const visible = Math.min(bytes.length, 7 + drop.trailLength);
