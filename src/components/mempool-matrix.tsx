@@ -340,7 +340,10 @@ export function MempoolMatrix() {
             </div>
           </header>
 
-          <div className="pointer-events-auto fixed right-3 top-[max(.75rem,env(safe-area-inset-top))] z-50 flex gap-1 sm:hidden">
+          <div
+            className="pointer-events-auto z-50 flex gap-1 sm:hidden"
+            style={{ position: "fixed", right: 12, top: 12, width: 124, justifyContent: "flex-end" }}
+          >
             <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
             <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
             <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
