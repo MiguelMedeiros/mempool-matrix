@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   blockAnimationProgress,
   classifyFee,
@@ -8,6 +8,7 @@ import {
   detectHighlights,
   getPressure,
   normalizeMode,
+  parseTransactionSearch,
   snapshotRate,
   type BlockSummary,
   type TransactionDetail,
@@ -68,6 +69,9 @@ export function MempoolMatrix() {
   const pausedRef = useRef(false);
   const pressureRef = useRef(getPressure(0));
   const feesRef = useRef(EMPTY.fees);
+  const focusedTxidRef = useRef<string | null>(null);
+  const searchWasPausedRef = useRef(false);
+  const searchedSelectionRef = useRef(false);
 
   const [snapshot, setSnapshot] = useState(EMPTY);
   const [selected, setSelected] = useState<MempoolTransaction | null>(null);
@@ -80,6 +84,9 @@ export function MempoolMatrix() {
   const [arrivalRate, setArrivalRate] = useState(0);
   const [replayIndex, setReplayIndex] = useState(-1);
   const [historyLength, setHistoryLength] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "invalid" | "not-found">("idle");
 
   const tone = useCallback((frequency: number, duration = 0.12, volume = 0.025) => {
     const audio = audioRef.current;
@@ -223,6 +230,7 @@ export function MempoolMatrix() {
           pausedRef.current,
           modeRef.current === "ambient",
           feesRef.current,
+          focusedTxidRef.current,
         );
       }
       if (blockProgress >= 0) drawBlockWave(context, width, height, blockProgress);
@@ -297,6 +305,70 @@ export function MempoolMatrix() {
     tone(73, 1.4, 0.08);
   };
 
+  const searchTransaction = async (event?: FormEvent) => {
+    event?.preventDefault();
+    const txid = parseTransactionSearch(searchQuery);
+    if (!txid) {
+      setSearchStatus("invalid");
+      return;
+    }
+    setSearchStatus("loading");
+    try {
+      const response = await fetch(`/api/tx/${txid}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("not-found");
+      const found = await response.json() as TransactionDetail;
+      const transaction: MempoolTransaction = {
+        txid: found.txid,
+        fee: found.fee,
+        vsize: found.vsize,
+        value: found.value,
+        feeRate: found.feeRate,
+      };
+      searchWasPausedRef.current = pausedRef.current;
+      searchedSelectionRef.current = true;
+      setPaused(true);
+      setMode("matrix");
+      setSelected(transaction);
+      setDetail(found);
+      setSearchStatus("idle");
+      setSearchOpen(false);
+      focusedTxidRef.current = found.confirmed ? null : txid;
+      if (!found.confirmed) {
+        transactionsRef.current = mergeTransactions(transactionsRef.current, [transaction], 140);
+        let drop = dropsRef.current.find((item) => item.txid === txid);
+        if (!drop) {
+          drop = createDrop(transaction, window.innerWidth, window.innerHeight);
+          dropsRef.current.push(drop);
+        }
+        drop.x = window.innerWidth / 2;
+        drop.y = Math.min(window.innerHeight * 0.48, window.innerHeight - 260);
+        drop.phase = "falling";
+        drop.phaseAge = 0;
+      }
+      tone(found.confirmed ? 220 : 660, 0.16, 0.025);
+    } catch {
+      setSearchStatus("not-found");
+    }
+  };
+
+  const pasteSearch = async () => {
+    try {
+      const value = await navigator.clipboard.readText();
+      setSearchQuery(value);
+      setSearchStatus("idle");
+    } catch {
+      setSearchStatus("invalid");
+    }
+  };
+
+  const closeInspector = () => {
+    setSelected(null);
+    setDetail(null);
+    focusedTxidRef.current = null;
+    if (searchedSelectionRef.current) setPaused(searchWasPausedRef.current);
+    searchedSelectionRef.current = false;
+  };
+
   const pressure = getPressure(snapshot.stats.vsize);
   const isAmbient = mode === "ambient";
   const highlights = detail ? detectHighlights(detail) : [];
@@ -320,6 +392,35 @@ export function MempoolMatrix() {
         </div>
       )}
 
+      {searchOpen && (
+        <div className="absolute inset-0 z-[70] flex items-start justify-center bg-black/55 px-3 pt-[max(5rem,env(safe-area-inset-top))] backdrop-blur-sm sm:pt-28">
+          <form onSubmit={searchTransaction} className="w-full max-w-2xl rounded-2xl border border-emerald-300/20 bg-[#021009]/95 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-[.28em] text-emerald-300/55">transaction search</div>
+                <div className="mt-1 text-sm text-emerald-50/75">Cole um TXID ou uma URL do explorador.</div>
+              </div>
+              <button type="button" onClick={() => setSearchOpen(false)} className="font-mono text-xs text-emerald-100/45">close</button>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 sm:flex-nowrap">
+              <input
+                autoFocus
+                value={searchQuery}
+                onChange={(event) => { setSearchQuery(event.target.value); setSearchStatus("idle"); }}
+                placeholder="64-character TXID or explorer URL"
+                spellCheck={false}
+                autoCapitalize="none"
+                className="min-w-0 basis-full flex-1 rounded-xl border border-emerald-300/15 bg-black/60 px-3 py-3 font-mono text-xs text-emerald-50 outline-none placeholder:text-emerald-100/20 focus:border-emerald-300/45 sm:basis-auto"
+              />
+              <button type="button" onClick={pasteSearch} className="rounded-xl border border-emerald-300/15 bg-emerald-300/5 px-3 font-mono text-[9px] uppercase tracking-[.14em] text-emerald-200/65">paste</button>
+              <button disabled={searchStatus === "loading"} className="rounded-xl border border-emerald-200/40 bg-emerald-300/15 px-4 font-mono text-[9px] uppercase tracking-[.14em] text-white disabled:opacity-50">{searchStatus === "loading" ? "finding" : "find"}</button>
+            </div>
+            {searchStatus === "invalid" && <p className="mt-3 font-mono text-[10px] text-amber-200/75">Informe um TXID válido com 64 caracteres hexadecimais.</p>}
+            {searchStatus === "not-found" && <p className="mt-3 font-mono text-[10px] text-rose-200/75">Transação não encontrada no nosso node.</p>}
+          </form>
+        </div>
+      )}
+
       {isAmbient ? (
         <button onClick={() => setVisualMode("matrix")} className="absolute right-3 top-[max(.75rem,env(safe-area-inset-top))] z-40 rounded-full border border-emerald-300/15 bg-black/30 px-3 py-2 font-mono text-[9px] uppercase tracking-[.2em] text-emerald-100/45 backdrop-blur-md">exit ambient</button>
       ) : (
@@ -338,6 +439,7 @@ export function MempoolMatrix() {
               </div>
             </div>
             <div className="pointer-events-auto hidden gap-2 sm:flex">
+              <ControlButton label="search tx" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
               <ControlButton label={audioEnabled ? "sound on" : "sound off"} onClick={toggleAudio} active={audioEnabled} />
               <ControlButton label={paused ? "resume" : "pause"} onClick={() => setPaused((value) => !value)} />
               <ControlButton label="fullscreen" onClick={toggleFullscreen} />
@@ -346,8 +448,9 @@ export function MempoolMatrix() {
 
           <div
             className="pointer-events-auto z-50 flex gap-1 sm:hidden"
-            style={{ position: "fixed", right: 12, top: 12, width: 124, justifyContent: "flex-end" }}
+            style={{ position: "fixed", right: 12, top: 12, width: 164, justifyContent: "flex-end" }}
           >
+            <ControlButton label="search tx" mobileLabel="⌕" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
             <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
             <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
             <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
@@ -363,8 +466,11 @@ export function MempoolMatrix() {
             {selected && (
               <div className="pointer-events-auto mb-3 w-full max-w-lg rounded-2xl border border-emerald-300/20 bg-[#021009]/95 p-4 shadow-2xl shadow-emerald-950/50 backdrop-blur-xl">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-emerald-300/55">transaction inspector</div>
-                  <button onClick={() => { setSelected(null); setDetail(null); }} className="font-mono text-xs text-emerald-100/45">close</button>
+                  <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.22em] text-emerald-300/55">
+                    transaction inspector
+                    {detail && <span className={`rounded-full border px-2 py-0.5 text-[7px] ${detail.confirmed ? "border-sky-300/25 bg-sky-300/10 text-sky-100" : "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"}`}>{detail.confirmed ? `confirmed · block ${detail.blockHeight}` : "in mempool"}</span>}
+                  </div>
+                  <button onClick={closeInspector} className="font-mono text-xs text-emerald-100/45">close</button>
                 </div>
                 <div className="mt-2 break-all font-mono text-[11px] text-emerald-50 sm:text-xs">{selected.txid}</div>
                 <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -375,6 +481,7 @@ export function MempoolMatrix() {
                   <TinyMetric label="outputs" value={detail ? String(detail.outputs) : "…"} />
                   <TinyMetric label="RBF" value={detail ? (detail.rbf ? "yes" : "no") : "…"} />
                 </div>
+                {detail?.confirmed && <div className="mt-3 font-mono text-[9px] uppercase tracking-[.14em] text-sky-100/55">confirmed {timeAgo(detail.blockTime ?? 0)} ago · block {detail.blockHeight}</div>}
                 {highlights.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{highlights.map((highlight) => <span key={highlight} className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-1 font-mono text-[8px] uppercase tracking-[.15em] text-amber-100">⚡ {highlight}</span>)}</div>}
                 <a href={`/explorer/tx/${selected.txid}`} target="_blank" rel="noreferrer" className="mt-3 inline-block font-mono text-[9px] uppercase tracking-[.18em] text-emerald-300/70 underline decoration-emerald-400/30 underline-offset-4">open in our explorer ↗</a>
               </div>
@@ -465,6 +572,7 @@ function drawMatrix(
   paused: boolean,
   ambient: boolean,
   fees: MempoolSnapshot["fees"],
+  focusedTxid: string | null,
 ) {
   context.textAlign = "center"; context.textBaseline = "middle";
   const floorY = ambient ? height - 28 : height - (width < 640 ? 182 : 112);
@@ -480,10 +588,12 @@ function drawMatrix(
     const bytes = drop.txid.match(/.{1,2}/g) ?? [];
     const visible = Math.min(bytes.length, 7 + drop.trailLength);
     const charStep = drop.fontSize * 1.18;
-    const near = Math.hypot(drop.x - pointer.x, drop.y - pointer.y) < 70;
+    const focused = drop.txid === focusedTxid;
+    const near = focused || Math.hypot(drop.x - pointer.x, drop.y - pointer.y) < 70;
     const palette = feePalette(classifyFee(drop.feeRate, fees));
-    context.font = `${near ? 700 : 500} ${drop.fontSize}px ui-monospace, monospace`;
-    context.shadowBlur = near ? 18 : palette.glow;
+    if (focused) drawSearchBeam(context, drop.x, drop.y, floorY, palette.dot);
+    context.font = `${near ? 700 : 500} ${focused ? drop.fontSize * 1.18 : drop.fontSize}px ui-monospace, monospace`;
+    context.shadowBlur = focused ? 28 : near ? 18 : palette.glow;
     context.shadowColor = palette.shadow;
 
     if (drop.phase === "dissolve") {
@@ -503,6 +613,26 @@ function drawMatrix(
     if (drop.phase === "impact") drawTxRipple(context, drop.x, floorY, impactProgress, palette.dot);
   }
   context.shadowBlur = 0;
+}
+
+function drawSearchBeam(context: CanvasRenderingContext2D, x: number, y: number, floorY: number, color: string) {
+  const pulse = 0.5 + Math.sin(performance.now() * 0.006) * 0.5;
+  context.save();
+  const beam = context.createLinearGradient(x - 46, 0, x + 46, 0);
+  beam.addColorStop(0, "rgba(80,255,145,0)");
+  beam.addColorStop(0.5, `rgba(120,255,170,${0.08 + pulse * 0.05})`);
+  beam.addColorStop(1, "rgba(80,255,145,0)");
+  context.fillStyle = beam;
+  context.fillRect(x - 46, 0, 92, floorY);
+  context.strokeStyle = color;
+  context.globalAlpha = 0.45 + pulse * 0.35;
+  context.lineWidth = 1.5;
+  context.shadowBlur = 24;
+  context.shadowColor = color;
+  context.beginPath();
+  context.ellipse(x, y, 30 + pulse * 12, 10 + pulse * 4, 0, 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
 }
 
 function drawTxRipple(

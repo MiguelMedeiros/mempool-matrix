@@ -10,7 +10,8 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 - End-of-lane lifecycle: deceleration, surface compression, luminous ripple, hexadecimal fragmentation, and delayed respawn
 - Continuous rain across mobile viewport changes and new-block events; existing drops keep their position and lifecycle
 - Mempool pressure atmosphere and transaction arrival-rate telemetry
-- Full transaction inspector with inputs, outputs, RBF, highlights, and local explorer links
+- Full transaction inspector with inputs, outputs, RBF, confirmation block, highlights, and local explorer links
+- TXID/URL search with mobile paste, live-rain centering, pause/focus beam, confirmed-transaction lookup, and graceful errors
 - Rare-event badges for high-value, high-fee, consolidation, and fan-out transactions
 - Optional Web Audio sonification and block vibration on supported mobile devices
 - Five-minute in-session replay timeline plus replay-last-block controls

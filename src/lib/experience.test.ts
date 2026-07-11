@@ -8,6 +8,7 @@ import {
   getPressure,
   normalizeMode,
   normalizeTransactionDetail,
+  parseTransactionSearch,
   snapshotRate,
   type ExperienceSnapshot,
 } from "./experience";
@@ -86,6 +87,21 @@ describe("rare transaction highlights", () => {
 });
 
 describe("transaction inspector and modes", () => {
+  it("extracts a txid from raw text or a local explorer URL", () => {
+    const txid = "ab".repeat(32);
+    expect(parseTransactionSearch(`  ${txid.toUpperCase()}  `)).toBe(txid);
+    expect(parseTransactionSearch(`http://100.67.121.90:3000/tx/${txid}?source=live`)).toBe(txid);
+    expect(parseTransactionSearch("not a transaction")).toBeNull();
+  });
+
+  it("normalizes confirmation block fields for searched transactions", () => {
+    const detail = normalizeTransactionDetail({
+      txid: "b".repeat(64), fee: 100, weight: 400, vin: [], vout: [],
+      status: { confirmed: true, block_height: 957600, block_time: 1783789999 },
+    });
+    expect(detail).toMatchObject({ confirmed: true, blockHeight: 957600, blockTime: 1783789999 });
+  });
+
   it("normalizes detail fields and detects opt-in RBF", () => {
     const detail = normalizeTransactionDetail({
       txid: "a".repeat(64),

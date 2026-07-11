@@ -36,6 +36,8 @@ export type TransactionDetail = {
   outputs: number;
   rbf: boolean;
   confirmed: boolean;
+  blockHeight?: number;
+  blockTime?: number;
 };
 
 const MODES: VisualMode[] = ["matrix", "constellation", "heatmap", "race", "ambient"];
@@ -99,6 +101,11 @@ export function normalizeMode(value: unknown): VisualMode {
     : "matrix";
 }
 
+export function parseTransactionSearch(value: string): string | null {
+  const match = value.trim().match(/(?:^|[^0-9a-f])([0-9a-f]{64})(?:$|[^0-9a-f])/i);
+  return match?.[1]?.toLowerCase() ?? null;
+}
+
 export function normalizeTransactionDetail(raw: Record<string, unknown>): TransactionDetail {
   const vin = Array.isArray(raw.vin) ? raw.vin as Array<Record<string, unknown>> : [];
   const vout = Array.isArray(raw.vout) ? raw.vout as Array<Record<string, unknown>> : [];
@@ -118,6 +125,10 @@ export function normalizeTransactionDetail(raw: Record<string, unknown>): Transa
     outputs: vout.length,
     rbf: vin.some((input) => safeNumber(input.sequence) < 0xfffffffe),
     confirmed: status.confirmed === true,
+    ...(status.confirmed === true ? {
+      blockHeight: safeNumber(status.block_height),
+      blockTime: safeNumber(status.block_time),
+    } : {}),
   };
 }
 
