@@ -333,12 +333,18 @@ export function MempoolMatrix() {
                 <span>{arrivalRate > 0 ? `+${arrivalRate} tx/s` : "sampling"}</span>
               </div>
             </div>
-            <div className="pointer-events-auto absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex w-[124px] flex-nowrap justify-end gap-1 sm:static sm:w-auto sm:max-w-none sm:gap-2">
-              <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
-              <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
-              <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
+            <div className="pointer-events-auto hidden gap-2 sm:flex">
+              <ControlButton label={audioEnabled ? "sound on" : "sound off"} onClick={toggleAudio} active={audioEnabled} />
+              <ControlButton label={paused ? "resume" : "pause"} onClick={() => setPaused((value) => !value)} />
+              <ControlButton label="fullscreen" onClick={toggleFullscreen} />
             </div>
           </header>
+
+          <div className="pointer-events-auto fixed right-3 top-[max(.75rem,env(safe-area-inset-top))] z-50 flex gap-1 sm:hidden">
+            <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
+            <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
+            <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
+          </div>
 
           <nav className="absolute inset-x-0 top-[118px] z-20 flex gap-2 overflow-x-auto px-4 pb-2 sm:top-[142px] sm:px-7 [scrollbar-width:none]">
             {MODES.map((item) => (
