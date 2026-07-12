@@ -405,13 +405,12 @@ export function MempoolMatrix() {
             </div>
             <div className="mt-4 flex flex-wrap gap-2 sm:flex-nowrap">
               <input
-                autoFocus
                 value={searchQuery}
                 onChange={(event) => { setSearchQuery(event.target.value); setSearchStatus("idle"); }}
                 placeholder="TXID ou URL do explorador"
                 spellCheck={false}
                 autoCapitalize="none"
-                className="min-w-0 basis-full flex-1 rounded-xl border border-emerald-300/15 bg-black/60 px-3 py-3 font-mono text-xs text-emerald-50 outline-none placeholder:text-emerald-100/20 focus:border-emerald-300/45 sm:basis-auto"
+                className="min-w-0 basis-full flex-1 rounded-xl border border-emerald-300/15 bg-black/60 px-3 py-3 font-mono text-base text-emerald-50 outline-none placeholder:text-emerald-100/20 focus:border-emerald-300/45 sm:basis-auto sm:text-xs"
               />
               <button type="button" onClick={pasteSearch} className="min-h-11 flex-1 rounded-xl border border-emerald-300/15 bg-emerald-300/5 px-3 font-mono text-[9px] uppercase tracking-[.14em] text-emerald-200/65 sm:flex-none">paste</button>
               <button disabled={searchStatus === "loading"} className="min-h-11 flex-1 rounded-xl border border-emerald-200/40 bg-emerald-300/15 px-4 font-mono text-[9px] uppercase tracking-[.14em] text-white disabled:opacity-50 sm:flex-none">{searchStatus === "loading" ? "finding" : "find"}</button>
