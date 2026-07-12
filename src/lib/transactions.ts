@@ -127,7 +127,7 @@ export function createDrop(
     phaseAge: 0,
     cycle: 0,
     opacity: 0.38 + feeEnergy * 0.58,
-    fontSize: width < 640 ? 10 + hashNumber(transaction.txid, 24) * 3 : 12 + hashNumber(transaction.txid, 24) * 5,
+    fontSize: width < 640 ? 14 + hashNumber(transaction.txid, 24) * 4 : 12 + hashNumber(transaction.txid, 24) * 5,
     trailLength: 2 + Math.floor(feeEnergy * 7),
   };
 }

@@ -398,8 +398,8 @@ export function MempoolMatrix() {
           <form onSubmit={searchTransaction} className="tx-search-sheet border border-emerald-300/20 bg-[#021009]/98 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-mono text-[9px] uppercase tracking-[.28em] text-emerald-300/55">transaction search</div>
-                <div className="mt-1 text-sm text-emerald-50/75">Cole um TXID ou uma URL do explorador.</div>
+                <div className="font-mono text-[11px] uppercase tracking-[.18em] text-emerald-300/70">transaction search</div>
+                <div className="mt-1.5 text-base leading-snug text-emerald-50/85">Cole um TXID ou uma URL do explorador.</div>
               </div>
               <button type="button" onClick={() => setSearchOpen(false)} className="shrink-0 rounded-full border border-emerald-300/15 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[.12em] text-emerald-100/55">close</button>
             </div>
@@ -427,12 +427,12 @@ export function MempoolMatrix() {
         <>
           <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))] sm:p-7">
             <div>
-              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.26em] text-emerald-300/70 sm:text-xs">
-                <span className={`size-1.5 rounded-full ${connected ? "animate-pulse bg-emerald-300" : "bg-amber-400"}`} />
+              <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-emerald-300/80 sm:tracking-[0.26em]">
+                <span className={`size-2 rounded-full ${connected ? "animate-pulse bg-emerald-300" : "bg-amber-400"}`} />
                 {connected ? "zero node · live" : "offline cache · reconnecting"}
               </div>
-              <h1 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">mempool<span className="text-emerald-400">.matrix</span></h1>
-              <div className="mt-1 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.14em] text-emerald-100/45 sm:text-xs">
+              <h1 className="mt-2 text-[32px] font-semibold leading-none tracking-[-0.05em] text-white sm:text-4xl">mempool<span className="text-emerald-400">.matrix</span></h1>
+              <div className="mt-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.11em] text-emerald-100/60 sm:mt-1 sm:text-xs sm:tracking-[.14em]">
                 <span>pressure</span>
                 <span className={`rounded-full border px-2 py-0.5 ${pressureClass(pressure.label)}`}>{pressure.label}</span>
                 <span>{arrivalRate > 0 ? `+${arrivalRate} tx/s` : "sampling"}</span>
@@ -447,8 +447,8 @@ export function MempoolMatrix() {
           </header>
 
           <div
-            className="pointer-events-auto z-50 flex gap-1 sm:hidden"
-            style={{ position: "fixed", right: 12, top: 12, width: 164, justifyContent: "flex-end" }}
+            className="pointer-events-auto z-50 grid grid-cols-2 gap-2 sm:hidden"
+            style={{ position: "fixed", right: 12, top: 12, width: 96 }}
           >
             <ControlButton label="search tx" mobileLabel="⌕" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
             <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
@@ -456,9 +456,9 @@ export function MempoolMatrix() {
             <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
           </div>
 
-          <nav className="absolute inset-x-0 top-[118px] z-20 flex gap-2 overflow-x-auto px-4 pb-2 sm:top-[142px] sm:px-7 [scrollbar-width:none]">
+          <nav className="absolute inset-x-0 top-[140px] z-20 flex snap-x gap-2 overflow-x-auto px-4 pb-3 sm:top-[142px] sm:px-7 [scrollbar-width:none]">
             {MODES.map((item) => (
-              <button key={item.id} onClick={() => setVisualMode(item.id)} className={`shrink-0 rounded-full border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[.16em] backdrop-blur-md transition ${mode === item.id ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/10 bg-black/30 text-emerald-100/45"}`}>{item.label}</button>
+              <button key={item.id} onClick={() => setVisualMode(item.id)} className={`min-h-11 shrink-0 snap-start rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[.13em] backdrop-blur-md transition sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-[9px] sm:tracking-[.16em] ${mode === item.id ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/10 bg-black/30 text-emerald-100/45"}`}>{item.label}</button>
             ))}
           </nav>
 
@@ -487,7 +487,7 @@ export function MempoolMatrix() {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2 rounded-2xl border border-emerald-300/10 bg-black/50 p-3 backdrop-blur-xl sm:max-w-3xl sm:grid-cols-5 sm:gap-4 sm:p-4">
+            <div className="grid grid-cols-3 gap-x-3 gap-y-4 rounded-2xl border border-emerald-300/15 bg-black/70 p-4 backdrop-blur-xl sm:max-w-3xl sm:grid-cols-5 sm:gap-4">
               <Metric label="transactions" value={formatCompact(snapshot.stats.count)} />
               <Metric label="virtual size" value={`${(snapshot.stats.vsize / 1_000_000).toFixed(1)} MB`} />
               <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} />
@@ -495,8 +495,8 @@ export function MempoolMatrix() {
               <Metric label="last block" value={timeAgo(snapshot.block.timestamp)} />
             </div>
 
-            <div className="pointer-events-auto mt-2 flex max-w-3xl items-center gap-2 rounded-xl border border-emerald-300/5 bg-black/35 px-3 py-2 backdrop-blur-md">
-              <button onClick={replayLastBlock} className="shrink-0 font-mono text-[8px] uppercase tracking-[.16em] text-emerald-300/60">replay block</button>
+            <div className="pointer-events-auto mt-2 flex min-h-12 max-w-3xl items-center gap-3 rounded-xl border border-emerald-300/10 bg-black/60 px-4 py-2 backdrop-blur-md">
+              <button onClick={replayLastBlock} className="shrink-0 font-mono text-[10px] uppercase tracking-[.13em] text-emerald-300/75">replay block</button>
               <input
                 aria-label="Replay timeline"
                 type="range"
@@ -504,9 +504,9 @@ export function MempoolMatrix() {
                 max={Math.max(0, historyLength - 1)}
                 value={replayIndex < 0 ? Math.max(0, historyLength - 1) : replayIndex}
                 onChange={(event) => replay(Number(event.target.value))}
-                className="h-1 min-w-0 flex-1 accent-emerald-400"
+                className="h-2 min-w-0 flex-1 accent-emerald-400"
               />
-              <span className="shrink-0 font-mono text-[8px] uppercase tracking-[.12em] text-emerald-100/30">{replayIndex < 0 ? "live" : "replay"}</span>
+              <span className="shrink-0 font-mono text-[10px] uppercase tracking-[.1em] text-emerald-100/50">{replayIndex < 0 ? "live" : "replay"}</span>
             </div>
           </section>
         </>
@@ -771,13 +771,13 @@ function pressureClass(label: ReturnType<typeof getPressure>["label"]) {
 }
 
 function ControlButton({ label, mobileLabel, onClick, active = false }: { label: string; mobileLabel?: string; onClick: () => void; active?: boolean }) {
-  return <button aria-label={label} onClick={onClick} className={`min-w-9 rounded-full border px-3 py-2 font-mono text-[9px] uppercase tracking-[.16em] backdrop-blur-md transition ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
+  return <button aria-label={label} onClick={onClick} className={`min-h-11 min-w-11 rounded-full border px-3 py-2 font-mono text-base uppercase leading-none tracking-[.1em] backdrop-blur-md transition sm:min-h-0 sm:min-w-9 sm:text-[9px] sm:tracking-[.16em] ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0"><div className="truncate font-mono text-[7px] uppercase tracking-[0.12em] text-emerald-300/40 sm:text-[9px]">{label}</div><div className="mt-1 truncate font-mono text-[11px] font-medium text-emerald-50 sm:text-base">{value}</div></div>;
+  return <div className="min-w-0"><div className="truncate font-mono text-[9px] uppercase tracking-[0.09em] text-emerald-300/60">{label}</div><div className="mt-1.5 truncate font-mono text-[15px] font-semibold text-emerald-50 sm:text-base">{value}</div></div>;
 }
 
 function TinyMetric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-lg border border-emerald-300/8 bg-black/25 p-2"><div className="font-mono text-[7px] uppercase tracking-[.12em] text-emerald-300/35">{label}</div><div className="mt-1 truncate font-mono text-[10px] text-emerald-50/80">{value}</div></div>;
+  return <div className="rounded-lg border border-emerald-300/10 bg-black/30 p-2.5"><div className="font-mono text-[9px] uppercase tracking-[.1em] text-emerald-300/55">{label}</div><div className="mt-1.5 truncate font-mono text-sm text-emerald-50/90">{value}</div></div>;
 }
