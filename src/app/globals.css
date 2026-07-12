@@ -35,6 +35,39 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+.tx-search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+}
+
+.tx-search-sheet {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  max-width: none;
+  max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  border-radius: 1.5rem 1.5rem 0 0;
+}
+
+@media (min-width: 640px) {
+  .tx-search-sheet {
+    top: 7rem;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    width: min(42rem, calc(100vw - 3rem));
+    transform: translateX(-50%);
+    border-radius: 1rem;
+  }
+}
+
 ::selection {
   color: #001b0b;
   background: #7dffad;

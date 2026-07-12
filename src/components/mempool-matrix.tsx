@@ -175,6 +175,7 @@ export function MempoolMatrix() {
   useEffect(() => {
     const restore = window.setTimeout(() => {
       setMode(normalizeMode(window.localStorage.getItem("mempool-matrix-mode")));
+      if (new URLSearchParams(window.location.search).get("search") === "1") setSearchOpen(true);
     }, 0);
     return () => window.clearTimeout(restore);
   }, []);
@@ -393,8 +394,8 @@ export function MempoolMatrix() {
       )}
 
       {searchOpen && (
-        <div className="fixed left-0 top-0 z-[70] flex h-[100dvh] w-[100dvw] max-w-[100dvw] items-start justify-center overflow-hidden bg-black/55 px-3 pt-[max(5rem,env(safe-area-inset-top))] backdrop-blur-sm sm:pt-28">
-          <form onSubmit={searchTransaction} className="box-border w-[calc(100dvw-1.5rem)] max-w-2xl overflow-hidden rounded-2xl border border-emerald-300/20 bg-[#021009]/95 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
+        <div className="tx-search-overlay bg-black/60 backdrop-blur-sm">
+          <form onSubmit={searchTransaction} className="tx-search-sheet border border-emerald-300/20 bg-[#021009]/98 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="font-mono text-[9px] uppercase tracking-[.28em] text-emerald-300/55">transaction search</div>
