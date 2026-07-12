@@ -85,6 +85,25 @@ button {
   animation: block-arrival 6.4s cubic-bezier(.16, 1, .3, 1) both;
 }
 
+@keyframes matrix-easter {
+  0% { opacity: 0; transform: scaleX(.25) translateY(12px); filter: blur(7px); }
+  16% { opacity: 1; transform: scaleX(1.03); filter: blur(0); }
+  82% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(.94) translateY(-8px); }
+}
+
+@keyframes matrix-rabbit {
+  from { left: -4rem; transform: scaleX(1); }
+  48% { transform: scaleX(1) translateY(-8px); }
+  50% { transform: scaleX(-1) translateY(-8px); }
+  to { left: calc(100% + 4rem); transform: scaleX(-1); }
+}
+
+.matrix-easter { animation: matrix-easter 6.4s cubic-bezier(.16, 1, .3, 1) both; }
+.matrix-rabbit { animation: matrix-rabbit 5.8s linear both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .block-arrival { animation-duration: .01ms; }
+  .block-arrival,
+  .matrix-easter,
+  .matrix-rabbit { animation-duration: .01ms; }
 }

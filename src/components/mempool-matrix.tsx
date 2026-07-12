@@ -8,8 +8,10 @@ import {
   detectHighlights,
   getPressure,
   normalizeMode,
+  parseMatrixCommand,
   parseTransactionSearch,
   snapshotRate,
+  type MatrixCommand,
   type BlockSummary,
   type TransactionDetail,
   type VisualMode,
@@ -25,6 +27,22 @@ import {
   type MatrixDrop,
   type MempoolTransaction,
 } from "@/lib/transactions";
+
+type EasterKind = MatrixCommand | "wake" | "deja-vu" | "kung-fu" | "knock" | "agent";
+type EasterState = { kind: EasterKind; title: string; subtitle: string; until: number };
+
+const EASTER_COPY: Record<EasterKind, [string, string]> = {
+  rabbit: ["FOLLOW THE WHITE RABBIT", "The hash will show the way.  🐇"],
+  spoon: ["THERE IS NO SPOON", "The mempool bends around you."],
+  "red-pill": ["WELCOME TO THE REAL WORLD", "Priority vision unlocked."],
+  "blue-pill": ["THE STORY ENDS", "Back to the ordinary mempool."],
+  zion: ["WELCOME TO ZION", "The last human transaction city."],
+  wake: ["WAKE UP, SATOSHI…", "THE MEMPOOL HAS YOU · FOLLOW THE HASH"],
+  "deja-vu": ["DÉJÀ VU", "A GLITCH IN THE MEMPOOL · RBF DETECTED  🐈‍⬛"],
+  "kung-fu": ["I KNOW KUNG FU", "Priority transaction detected."],
+  knock: ["KNOCK, KNOCK, SATOSHI.", "A new block is entering the system."],
+  agent: ["SYSTEM ANOMALY", "Extreme fee agent detected."],
+};
 
 const MODES: Array<{ id: VisualMode; label: string }> = [
   { id: "matrix", label: "matrix" },
@@ -72,6 +90,10 @@ export function MempoolMatrix() {
   const focusedTxidRef = useRef<string | null>(null);
   const searchWasPausedRef = useRef(false);
   const searchedSelectionRef = useRef(false);
+  const easterRef = useRef<EasterState | null>(null);
+  const easterTimerRef = useRef<number | null>(null);
+  const longPressRef = useRef<number | null>(null);
+  const titleTapsRef = useRef<number[]>([]);
 
   const [snapshot, setSnapshot] = useState(EMPTY);
   const [selected, setSelected] = useState<MempoolTransaction | null>(null);
@@ -84,6 +106,8 @@ export function MempoolMatrix() {
   const [arrivalRate, setArrivalRate] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pillOpen, setPillOpen] = useState(false);
+  const [easter, setEaster] = useState<EasterState | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "invalid" | "not-found">("idle");
 
@@ -101,6 +125,21 @@ export function MempoolMatrix() {
     oscillator.stop(audio.currentTime + duration);
   }, []);
 
+  const triggerEaster = useCallback((kind: EasterKind) => {
+    const [title, subtitle] = EASTER_COPY[kind];
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const duration = reduced ? 2500 : (kind === "red-pill" || kind === "zion" ? 20000 : kind === "spoon" ? 12000 : 6500);
+    const next = { kind, title, subtitle, until: performance.now() + duration };
+    easterRef.current = next;
+    setEaster(next);
+    if (easterTimerRef.current) window.clearTimeout(easterTimerRef.current);
+    easterTimerRef.current = window.setTimeout(() => {
+      easterRef.current = null;
+      setEaster(null);
+    }, duration);
+    tone(kind === "red-pill" || kind === "agent" ? 110 : kind === "zion" ? 164 : 523, 0.28, 0.025);
+  }, [tone]);
+
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/mempool", { cache: "no-store" });
@@ -108,7 +147,8 @@ export function MempoolMatrix() {
       const next = (await response.json()) as MempoolSnapshot;
       const previous = previousRef.current;
       const oldIds = new Set(transactionsRef.current.map((transaction) => transaction.txid));
-      const newCount = next.transactions.filter((transaction) => !oldIds.has(transaction.txid)).length;
+      const newTransactions = next.transactions.filter((transaction) => !oldIds.has(transaction.txid));
+      const newCount = newTransactions.length;
 
       transactionsRef.current = mergeTransactions(transactionsRef.current, next.transactions, 140);
       feesRef.current = next.fees;
@@ -128,16 +168,19 @@ export function MempoolMatrix() {
           blockPulseRef.current = performance.now();
           setBlockEvent(event);
           window.setTimeout(() => setBlockEvent(null), 6500);
-          tone(73, 1.4, 0.08);
+          if (event.height % 3 === 0) triggerEaster("knock");
+          else tone(73, 1.4, 0.08);
           if (navigator.vibrate) navigator.vibrate([80, 40, 160]);
         } else if (newCount > 0) {
-          tone(380 + Math.min(500, newCount * 22), 0.06, 0.012);
+          const extreme = newTransactions.find((transaction) => transaction.feeRate >= Math.max(100, next.fees.fastestFee * 4));
+          if (extreme && !easterRef.current) triggerEaster(extreme.feeRate >= 200 ? "agent" : "kung-fu");
+          else tone(380 + Math.min(500, newCount * 22), 0.06, 0.012);
         }
       }
     } catch {
       setConnected(false);
     }
-  }, [tone]);
+  }, [tone, triggerEaster]);
 
   useEffect(() => {
     const boot = window.setTimeout(() => {
@@ -174,9 +217,11 @@ export function MempoolMatrix() {
       const params = new URLSearchParams(window.location.search);
       if (params.get("search") === "1") setSearchOpen(true);
       if (params.get("settings") === "1") setSettingsOpen(true);
+      const egg = params.get("egg");
+      if (egg && egg in EASTER_COPY) triggerEaster(egg as EasterKind);
     }, 0);
     return () => window.clearTimeout(restore);
-  }, []);
+  }, [triggerEaster]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -208,7 +253,8 @@ export function MempoolMatrix() {
       const dt = Math.min(0.04, (now - last) / 1000);
       last = now;
       const pressure = pressureRef.current;
-      drawBackground(context, width, height, frame, now, pressure.intensity);
+      const activeEaster = easterRef.current && easterRef.current.until > now ? easterRef.current.kind : null;
+      drawBackground(context, width, height, frame, now, pressure.intensity, activeEaster);
       syncDrops(dropsRef.current, transactionsRef.current, width, height);
 
       const blockProgress = blockAnimationProgress(blockPulseRef.current, now);
@@ -230,6 +276,7 @@ export function MempoolMatrix() {
           modeRef.current === "ambient",
           feesRef.current,
           focusedTxidRef.current,
+          activeEaster,
         );
       }
       if (blockProgress >= 0) drawBlockWave(context, width, height, blockProgress);
@@ -290,6 +337,14 @@ export function MempoolMatrix() {
 
   const searchTransaction = async (event?: FormEvent) => {
     event?.preventDefault();
+    const command = parseMatrixCommand(searchQuery);
+    if (command) {
+      setSearchStatus("idle");
+      setSearchOpen(false);
+      setSearchQuery("");
+      triggerEaster(command);
+      return;
+    }
     const txid = parseTransactionSearch(searchQuery);
     if (!txid) {
       setSearchStatus("invalid");
@@ -352,6 +407,32 @@ export function MempoolMatrix() {
     searchedSelectionRef.current = false;
   };
 
+  const tapTitle = () => {
+    const now = performance.now();
+    titleTapsRef.current = titleTapsRef.current.filter((time) => now - time < 2600).concat(now);
+    if (titleTapsRef.current.length === 3) triggerEaster("wake");
+    if (titleTapsRef.current.length >= 7) {
+      titleTapsRef.current = [];
+      triggerEaster("zion");
+    }
+  };
+
+  const startTitleHold = () => {
+    if (longPressRef.current) window.clearTimeout(longPressRef.current);
+    longPressRef.current = window.setTimeout(() => setPillOpen(true), 650);
+  };
+
+  const cancelTitleHold = () => {
+    if (longPressRef.current) window.clearTimeout(longPressRef.current);
+    longPressRef.current = null;
+  };
+
+  useEffect(() => {
+    if (!detail?.rbf) return;
+    const timer = window.setTimeout(() => triggerEaster("deja-vu"), 0);
+    return () => window.clearTimeout(timer);
+  }, [detail, triggerEaster]);
+
   const pressure = getPressure(snapshot.stats.vsize);
   const isAmbient = mode === "ambient";
   const highlights = detail ? detectHighlights(detail) : [];
@@ -371,6 +452,29 @@ export function MempoolMatrix() {
               <span>{(blockEvent.size / 1_000_000).toFixed(2)} MB</span>
               <span>{timeAgo(blockEvent.timestamp)} ago</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {easter && (
+        <div className={`pointer-events-none absolute inset-0 z-[60] flex items-center justify-center px-5 ${easter.kind === "red-pill" || easter.kind === "agent" ? "bg-red-950/15" : easter.kind === "zion" ? "bg-amber-950/15" : ""}`}>
+          {easter.kind === "rabbit" && <div className="matrix-rabbit absolute bottom-[30%] font-mono text-4xl">🐇</div>}
+          <div className="matrix-easter max-w-xl border-y border-emerald-200/25 bg-black/70 px-6 py-6 text-center backdrop-blur-md">
+            <div className={`font-mono text-xl font-bold tracking-[.08em] sm:text-3xl ${easter.kind === "red-pill" || easter.kind === "agent" ? "text-red-300" : easter.kind === "zion" ? "text-amber-300" : "text-emerald-200"}`}>{easter.title}</div>
+            <div className="mt-3 font-mono text-[11px] uppercase tracking-[.16em] text-white/55 sm:text-sm">{easter.subtitle}</div>
+          </div>
+        </div>
+      )}
+
+      {pillOpen && (
+        <div className="tx-search-overlay flex items-center justify-center bg-black/75 px-4 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/90 p-6 text-center">
+            <div className="font-mono text-sm uppercase tracking-[.2em] text-white/60">This is your last chance.</div>
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <button onClick={() => { setPillOpen(false); triggerEaster("red-pill"); }} className="min-h-24 rounded-full border border-red-300/40 bg-red-500/15 font-mono text-sm uppercase tracking-[.15em] text-red-200">red pill</button>
+              <button onClick={() => { setPillOpen(false); triggerEaster("blue-pill"); }} className="min-h-24 rounded-full border border-sky-300/40 bg-sky-500/15 font-mono text-sm uppercase tracking-[.15em] text-sky-200">blue pill</button>
+            </div>
+            <button onClick={() => setPillOpen(false)} className="mt-5 font-mono text-xs uppercase text-white/35">cancel</button>
           </div>
         </div>
       )}
@@ -442,7 +546,14 @@ export function MempoolMatrix() {
                 <span className={`size-2 rounded-full ${connected ? "animate-pulse bg-emerald-300" : "bg-amber-400"}`} />
                 {connected ? "zero node · live" : "offline cache · reconnecting"}
               </div>
-              <h1 className="mt-2 text-[32px] font-semibold leading-none tracking-[-0.05em] text-white sm:text-4xl">mempool<span className="text-emerald-400">.matrix</span></h1>
+              <button
+                onClick={tapTitle}
+                onPointerDown={startTitleHold}
+                onPointerUp={cancelTitleHold}
+                onPointerCancel={cancelTitleHold}
+                onPointerLeave={cancelTitleHold}
+                className="pointer-events-auto mt-2 block select-none text-left text-[32px] font-semibold leading-none tracking-[-0.05em] text-white sm:text-4xl"
+              >mempool<span className="text-emerald-400">.matrix</span></button>
               <div className="mt-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.11em] text-emerald-100/60 sm:mt-1 sm:text-xs sm:tracking-[.14em]">
                 <span>pressure</span>
                 <span className={`rounded-full border px-2 py-0.5 ${pressureClass(pressure.label)}`}>{pressure.label}</span>
@@ -544,11 +655,18 @@ function drawBackground(
   frame: number,
   now: number,
   intensity: number,
+  easter: EasterKind | null,
 ) {
   const gradient = context.createRadialGradient(width * 0.5, height * 0.32, 0, width * 0.5, height * 0.32, Math.max(width, height) * 0.9);
-  gradient.addColorStop(0, `rgb(${4 + intensity * 7}, ${17 + intensity * 12}, ${10 + intensity * 7})`);
-  gradient.addColorStop(0.5, "#020a06");
-  gradient.addColorStop(1, "#010302");
+  if (easter === "red-pill" || easter === "agent") {
+    gradient.addColorStop(0, "#280507"); gradient.addColorStop(0.55, "#0b0203"); gradient.addColorStop(1, "#010101");
+  } else if (easter === "zion") {
+    gradient.addColorStop(0, "#251405"); gradient.addColorStop(0.55, "#0c0702"); gradient.addColorStop(1, "#020101");
+  } else {
+    gradient.addColorStop(0, `rgb(${4 + intensity * 7}, ${17 + intensity * 12}, ${10 + intensity * 7})`);
+    gradient.addColorStop(0.5, "#020a06");
+    gradient.addColorStop(1, "#010302");
+  }
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
   context.strokeStyle = `rgba(91,255,155,${0.018 + intensity * 0.035})`;
@@ -574,6 +692,7 @@ function drawMatrix(
   ambient: boolean,
   fees: MempoolSnapshot["fees"],
   focusedTxid: string | null,
+  easter: EasterKind | null,
 ) {
   context.textAlign = "center"; context.textBaseline = "middle";
   const mobile = width < 640;
@@ -587,19 +706,22 @@ function drawMatrix(
       drop.y = next.y;
       drop.cycle = next.cycle;
     }
+    const renderX = easter === "spoon"
+      ? drop.x + Math.sin(drop.y * 0.018 + performance.now() * 0.003) * (mobile ? 22 : 42)
+      : drop.x;
     const bytes = drop.txid.match(/.{1,2}/g) ?? [];
     const visible = Math.min(bytes.length, 7 + drop.trailLength);
     const charStep = drop.fontSize * 1.18;
     const focused = drop.txid === focusedTxid;
-    const near = focused || Math.hypot(drop.x - pointer.x, drop.y - pointer.y) < 70;
+    const near = focused || Math.hypot(renderX - pointer.x, drop.y - pointer.y) < 70;
     const palette = feePalette(classifyFee(drop.feeRate, fees));
-    if (focused) drawSearchBeam(context, drop.x, drop.y, floorY, palette.dot);
+    if (focused) drawSearchBeam(context, renderX, drop.y, floorY, palette.dot);
     context.font = `${near ? 700 : 500} ${focused ? drop.fontSize * 1.18 : drop.fontSize}px ui-monospace, monospace`;
     context.shadowBlur = focused ? (mobile ? 14 : 28) : mobile ? 0 : near ? 18 : palette.glow;
     context.shadowColor = palette.shadow;
 
     if (drop.phase === "dissolve") {
-      drawTxDissolve(context, drop, bytes, visible, charStep, palette);
+      drawTxDissolve(context, renderX === drop.x ? drop : { ...drop, x: renderX }, bytes, visible, charStep, palette);
       continue;
     }
 
@@ -610,9 +732,16 @@ function drawMatrix(
     for (let index = 0; index < visible; index += 1) {
       const fade = 1 - index / visible;
       context.fillStyle = index === 0 ? palette.head : palette.trail(fade * drop.opacity);
-      context.fillText(bytes[index], drop.x, drop.y - index * charStep * compression);
+      context.fillText(bytes[index], renderX, drop.y - index * charStep * compression);
     }
-    if (drop.phase === "impact") drawTxRipple(context, drop.x, floorY, impactProgress, palette.dot);
+    if (drop.feeRate >= Math.max(200, fees.fastestFee * 5)) {
+      context.save();
+      context.font = "700 8px ui-monospace, monospace";
+      context.fillStyle = "rgba(255,90,90,.85)";
+      context.fillText("AGENT", renderX, drop.y + 15);
+      context.restore();
+    }
+    if (drop.phase === "impact") drawTxRipple(context, renderX, floorY, impactProgress, palette.dot);
   }
   context.shadowBlur = 0;
 }
@@ -681,6 +810,13 @@ function drawTxDissolve(
     context.fillStyle = index === 0 ? palette.head : palette.trail((1 - progress) * drop.opacity);
     context.fillText(bytes[index], 0, 0);
     context.restore();
+  }
+  if (progress > 0.32 && progress < 0.72 && Number.parseInt(drop.txid.slice(0, 2), 16) % 11 === 0) {
+    const words = ["NEO", "TRINITY", "MORPHEUS", "ZION"];
+    const word = words[Number.parseInt(drop.txid.slice(2, 4), 16) % words.length];
+    context.font = "700 11px ui-monospace, monospace";
+    context.fillStyle = palette.head;
+    context.fillText(word, drop.x, drop.y - 22);
   }
   context.restore();
 }

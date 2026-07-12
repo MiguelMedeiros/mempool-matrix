@@ -18,6 +18,7 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 - Installable PWA with cached shell and last-known mempool snapshot
 - Responsive canvas and safe-area-aware mobile interface
 - Adaptive rendering budget: stable 48-drop mobile pool, reduced mobile DPR, and zero per-glyph glow in the normal mobile rain
+- Matrix easter eggs tied to real activity: White Rabbit, Wake Up Satoshi, Red/Blue Pill, Kung Fu priority, RBF Déjà Vu, Spoon bending, Knock Knock blocks, fee Agents, hidden names, and Zion mode
 - Node-backed data via the local mempool.space stack on `zero`
 - Private Tailscale deployment
 

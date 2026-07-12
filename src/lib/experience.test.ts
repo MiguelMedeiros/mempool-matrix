@@ -9,6 +9,7 @@ import {
   normalizeMode,
   normalizeTransactionDetail,
   parseTransactionSearch,
+  parseMatrixCommand,
   snapshotRate,
   type ExperienceSnapshot,
 } from "./experience";
@@ -87,6 +88,15 @@ describe("rare transaction highlights", () => {
 });
 
 describe("transaction inspector and modes", () => {
+  it("recognizes hidden Matrix commands without confusing txids", () => {
+    expect(parseMatrixCommand("follow the white rabbit")).toBe("rabbit");
+    expect(parseMatrixCommand("there is no spoon")).toBe("spoon");
+    expect(parseMatrixCommand("red pill")).toBe("red-pill");
+    expect(parseMatrixCommand("blue pill")).toBe("blue-pill");
+    expect(parseMatrixCommand("zion")).toBe("zion");
+    expect(parseMatrixCommand("ab".repeat(32))).toBeNull();
+  });
+
   it("extracts a txid from raw text or a local explorer URL", () => {
     const txid = "ab".repeat(32);
     expect(parseTransactionSearch(`  ${txid.toUpperCase()}  `)).toBe(txid);

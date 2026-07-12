@@ -101,6 +101,19 @@ export function normalizeMode(value: unknown): VisualMode {
     : "matrix";
 }
 
+export type MatrixCommand = "rabbit" | "spoon" | "red-pill" | "blue-pill" | "zion";
+
+export function parseMatrixCommand(value: string): MatrixCommand | null {
+  const command = value.trim().toLowerCase().replace(/\s+/g, " ");
+  return ({
+    "follow the white rabbit": "rabbit",
+    "there is no spoon": "spoon",
+    "red pill": "red-pill",
+    "blue pill": "blue-pill",
+    zion: "zion",
+  } as Record<string, MatrixCommand>)[command] ?? null;
+}
+
 export function parseTransactionSearch(value: string): string | null {
   const match = value.trim().match(/(?:^|[^0-9a-f])([0-9a-f]{64})(?:$|[^0-9a-f])/i);
   return match?.[1]?.toLowerCase() ?? null;
