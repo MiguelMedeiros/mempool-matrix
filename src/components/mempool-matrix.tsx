@@ -448,7 +448,7 @@ export function MempoolMatrix() {
 
           <div
             className="pointer-events-auto z-50 grid grid-cols-2 gap-2 sm:hidden"
-            style={{ position: "fixed", right: 12, top: 12, width: 96 }}
+            style={{ position: "fixed", left: "min(calc(100vw - 108px), 282px)", top: 12, width: 96 }}
           >
             <ControlButton label="search tx" mobileLabel="⌕" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
             <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
@@ -462,7 +462,7 @@ export function MempoolMatrix() {
             ))}
           </nav>
 
-          <section className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:p-7">
+          <section className="pointer-events-none absolute bottom-0 left-0 z-20 w-[384px] max-w-[100vw] p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:inset-x-0 sm:w-auto sm:max-w-none sm:p-7">
             {selected && (
               <div className="pointer-events-auto mb-3 w-full max-w-lg rounded-2xl border border-emerald-300/20 bg-[#021009]/95 p-4 shadow-2xl shadow-emerald-950/50 backdrop-blur-xl">
                 <div className="flex items-start justify-between gap-3">
