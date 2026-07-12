@@ -86,10 +86,10 @@ button {
 }
 
 @keyframes matrix-easter {
-  0% { opacity: 0; transform: scaleX(.25) translateY(12px); filter: blur(7px); }
-  16% { opacity: 1; transform: scaleX(1.03); filter: blur(0); }
-  82% { opacity: 1; transform: scaleX(1); }
-  100% { opacity: 0; transform: scaleX(.94) translateY(-8px); }
+  0% { opacity: 0; transform: translateY(calc(-50% + 12px)) scaleX(.25); filter: blur(7px); }
+  16% { opacity: 1; transform: translateY(-50%) scaleX(1.03); filter: blur(0); }
+  82% { opacity: 1; transform: translateY(-50%) scaleX(1); }
+  100% { opacity: 0; transform: translateY(calc(-50% - 8px)) scaleX(.94); }
 }
 
 @keyframes matrix-rabbit {

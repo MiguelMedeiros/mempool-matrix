@@ -457,9 +457,9 @@ export function MempoolMatrix() {
       )}
 
       {easter && (
-        <div className={`pointer-events-none absolute inset-0 z-[60] flex items-center justify-center px-5 ${easter.kind === "red-pill" || easter.kind === "agent" ? "bg-red-950/15" : easter.kind === "zion" ? "bg-amber-950/15" : ""}`}>
+        <div className={`pointer-events-none absolute inset-0 z-[60] px-5 ${easter.kind === "red-pill" || easter.kind === "agent" ? "bg-red-950/15" : easter.kind === "zion" ? "bg-amber-950/15" : ""}`}>
           {easter.kind === "rabbit" && <div className="matrix-rabbit absolute bottom-[30%] font-mono text-4xl">🐇</div>}
-          <div className="matrix-easter max-w-xl border-y border-emerald-200/25 bg-black/70 px-6 py-6 text-center backdrop-blur-md">
+          <div className="matrix-easter absolute left-3 top-1/2 w-[min(360px,calc(100vw-24px))] -translate-y-1/2 border-y border-emerald-200/25 bg-black/70 px-5 py-6 text-center backdrop-blur-md">
             <div className={`font-mono text-xl font-bold tracking-[.08em] sm:text-3xl ${easter.kind === "red-pill" || easter.kind === "agent" ? "text-red-300" : easter.kind === "zion" ? "text-amber-300" : "text-emerald-200"}`}>{easter.title}</div>
             <div className="mt-3 font-mono text-[11px] uppercase tracking-[.16em] text-white/55 sm:text-sm">{easter.subtitle}</div>
           </div>
