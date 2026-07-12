@@ -13,8 +13,8 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 - Full transaction inspector with inputs, outputs, RBF, confirmation block, highlights, and local explorer links
 - TXID/URL search with mobile paste, live-rain centering, pause/focus beam, confirmed-transaction lookup, and graceful errors
 - Rare-event badges for high-value, high-fee, consolidation, and fan-out transactions
-- Optional Web Audio sonification and block vibration on supported mobile devices
-- Five-minute in-session replay timeline plus replay-last-block controls
+- Mobile configuration sheet for visual mode and opt-in Web Audio sonification
+- Compact six-metric live HUD with transaction arrival rate
 - Installable PWA with cached shell and last-known mempool snapshot
 - Responsive canvas and safe-area-aware mobile interface
 - Node-backed data via the local mempool.space stack on `zero`

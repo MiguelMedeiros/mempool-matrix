@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   blockAnimationProgress,
   classifyFee,
@@ -60,7 +60,6 @@ export function MempoolMatrix() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dropsRef = useRef<MatrixDrop[]>([]);
   const transactionsRef = useRef<MempoolTransaction[]>([]);
-  const snapshotsRef = useRef<MempoolSnapshot[]>([]);
   const pointerRef = useRef({ x: -1000, y: -1000 });
   const previousRef = useRef<MempoolSnapshot | null>(null);
   const blockPulseRef = useRef(0);
@@ -82,9 +81,8 @@ export function MempoolMatrix() {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [blockEvent, setBlockEvent] = useState<BlockSummary | null>(null);
   const [arrivalRate, setArrivalRate] = useState(0);
-  const [replayIndex, setReplayIndex] = useState(-1);
-  const [historyLength, setHistoryLength] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "invalid" | "not-found">("idle");
 
@@ -114,11 +112,8 @@ export function MempoolMatrix() {
       transactionsRef.current = mergeTransactions(transactionsRef.current, next.transactions, 140);
       feesRef.current = next.fees;
       pressureRef.current = getPressure(next.stats.vsize);
-      snapshotsRef.current = snapshotsRef.current.concat(next).slice(-120);
-      setHistoryLength(snapshotsRef.current.length);
       previousRef.current = next;
       setSnapshot(next);
-      setReplayIndex(-1);
       setConnected(true);
       window.localStorage.setItem("mempool-matrix-last", JSON.stringify(next));
 
@@ -175,7 +170,9 @@ export function MempoolMatrix() {
   useEffect(() => {
     const restore = window.setTimeout(() => {
       setMode(normalizeMode(window.localStorage.getItem("mempool-matrix-mode")));
-      if (new URLSearchParams(window.location.search).get("search") === "1") setSearchOpen(true);
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("search") === "1") setSearchOpen(true);
+      if (params.get("settings") === "1") setSettingsOpen(true);
     }, 0);
     return () => window.clearTimeout(restore);
   }, []);
@@ -288,22 +285,6 @@ export function MempoolMatrix() {
   const toggleFullscreen = async () => {
     if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
     else await document.exitFullscreen?.();
-  };
-
-  const replay = (index: number) => {
-    const historical = snapshotsRef.current[index];
-    if (!historical) return;
-    setReplayIndex(index);
-    setSnapshot(historical);
-    transactionsRef.current = historical.transactions;
-    dropsRef.current = [];
-  };
-
-  const replayLastBlock = () => {
-    blockPulseRef.current = performance.now();
-    setBlockEvent(snapshot.block);
-    window.setTimeout(() => setBlockEvent(null), 6500);
-    tone(73, 1.4, 0.08);
   };
 
   const searchTransaction = async (event?: FormEvent) => {
@@ -421,6 +402,35 @@ export function MempoolMatrix() {
         </div>
       )}
 
+      {settingsOpen && (
+        <div className="tx-search-overlay bg-black/60 backdrop-blur-sm">
+          <div className="tx-search-sheet border border-emerald-300/20 bg-[#021009]/98 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-mono text-[11px] uppercase tracking-[.18em] text-emerald-300/70">configurações</div>
+                <div className="mt-1.5 text-base text-emerald-50/85">Visual e áudio da experiência.</div>
+              </div>
+              <button type="button" onClick={() => setSettingsOpen(false)} className="shrink-0 rounded-full border border-emerald-300/15 px-3 py-2 font-mono text-[10px] uppercase text-emerald-100/65">fechar</button>
+            </div>
+            <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {MODES.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => { setVisualMode(item.id); setSettingsOpen(false); }}
+                  className={`flex min-h-14 items-center justify-between rounded-xl border px-4 text-left font-mono text-sm uppercase tracking-[.1em] ${mode === item.id ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/10 bg-black/30 text-emerald-100/65"}`}
+                >
+                  {item.label}<span className="text-emerald-300/55">{mode === item.id ? "●" : "○"}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={toggleAudio} className="mt-4 flex min-h-14 w-full items-center justify-between rounded-xl border border-emerald-300/15 bg-black/35 px-4 font-mono text-sm uppercase tracking-[.1em] text-emerald-50/80">
+              <span>som ambiente</span>
+              <span className={`rounded-full px-3 py-1 text-xs ${audioEnabled ? "bg-emerald-300/20 text-emerald-100" : "bg-white/5 text-white/40"}`}>{audioEnabled ? "ligado" : "desligado"}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {isAmbient ? (
         <button onClick={() => setVisualMode("matrix")} className="absolute right-3 top-[max(.75rem,env(safe-area-inset-top))] z-40 rounded-full border border-emerald-300/15 bg-black/30 px-3 py-2 font-mono text-[9px] uppercase tracking-[.2em] text-emerald-100/45 backdrop-blur-md">exit ambient</button>
       ) : (
@@ -440,7 +450,7 @@ export function MempoolMatrix() {
             </div>
             <div className="pointer-events-auto hidden gap-2 sm:flex">
               <ControlButton label="search tx" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
-              <ControlButton label={audioEnabled ? "sound on" : "sound off"} onClick={toggleAudio} active={audioEnabled} />
+              <ControlButton label="settings" onClick={() => setSettingsOpen(true)} />
               <ControlButton label={paused ? "resume" : "pause"} onClick={() => setPaused((value) => !value)} />
               <ControlButton label="fullscreen" onClick={toggleFullscreen} />
             </div>
@@ -450,17 +460,11 @@ export function MempoolMatrix() {
             className="pointer-events-auto z-50 grid grid-cols-2 gap-2 sm:hidden"
             style={{ position: "fixed", left: "min(calc(100vw - 108px), 282px)", top: 12, width: 96 }}
           >
-            <ControlButton label="search tx" mobileLabel="⌕" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
-            <ControlButton label={audioEnabled ? "sound on" : "sound off"} mobileLabel="♪" onClick={toggleAudio} active={audioEnabled} />
+            <ControlButton label="search tx" mobileLabel={<SearchIcon />} onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
+            <ControlButton label="settings" mobileLabel={<SettingsIcon />} onClick={() => setSettingsOpen(true)} />
             <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
             <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
           </div>
-
-          <nav className="absolute inset-x-0 top-[140px] z-20 flex snap-x gap-2 overflow-x-auto px-4 pb-3 sm:top-[142px] sm:px-7 [scrollbar-width:none]">
-            {MODES.map((item) => (
-              <button key={item.id} onClick={() => setVisualMode(item.id)} className={`min-h-11 shrink-0 snap-start rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[.13em] backdrop-blur-md transition sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-[9px] sm:tracking-[.16em] ${mode === item.id ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/10 bg-black/30 text-emerald-100/45"}`}>{item.label}</button>
-            ))}
-          </nav>
 
           <section className="pointer-events-none absolute bottom-0 left-0 z-20 w-[384px] max-w-[100vw] p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:inset-x-0 sm:w-auto sm:max-w-none sm:p-7">
             {selected && (
@@ -493,20 +497,7 @@ export function MempoolMatrix() {
               <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} />
               <Metric label="height" value={String(snapshot.block.height || "—")} />
               <Metric label="last block" value={timeAgo(snapshot.block.timestamp)} />
-            </div>
-
-            <div className="pointer-events-auto mt-2 flex min-h-12 max-w-3xl items-center gap-3 rounded-xl border border-emerald-300/10 bg-black/60 px-4 py-2 backdrop-blur-md">
-              <button onClick={replayLastBlock} className="shrink-0 font-mono text-[10px] uppercase tracking-[.13em] text-emerald-300/75">replay block</button>
-              <input
-                aria-label="Replay timeline"
-                type="range"
-                min="0"
-                max={Math.max(0, historyLength - 1)}
-                value={replayIndex < 0 ? Math.max(0, historyLength - 1) : replayIndex}
-                onChange={(event) => replay(Number(event.target.value))}
-                className="h-2 min-w-0 flex-1 accent-emerald-400"
-              />
-              <span className="shrink-0 font-mono text-[10px] uppercase tracking-[.1em] text-emerald-100/50">{replayIndex < 0 ? "live" : "replay"}</span>
+              <Metric label="arrival rate" value={arrivalRate > 0 ? `${arrivalRate} tx/s` : "sampling"} />
             </div>
           </section>
         </>
@@ -770,7 +761,15 @@ function pressureClass(label: ReturnType<typeof getPressure>["label"]) {
   }[label];
 }
 
-function ControlButton({ label, mobileLabel, onClick, active = false }: { label: string; mobileLabel?: string; onClick: () => void; active?: boolean }) {
+function SearchIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.4"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 5 5" /></svg>;
+}
+
+function SettingsIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" /></svg>;
+}
+
+function ControlButton({ label, mobileLabel, onClick, active = false }: { label: string; mobileLabel?: ReactNode; onClick: () => void; active?: boolean }) {
   return <button aria-label={label} onClick={onClick} className={`min-h-11 min-w-11 rounded-full border px-3 py-2 font-mono text-base uppercase leading-none tracking-[.1em] backdrop-blur-md transition sm:min-h-0 sm:min-w-9 sm:text-[9px] sm:tracking-[.16em] ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
 }
 
