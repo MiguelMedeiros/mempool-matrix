@@ -21,6 +21,7 @@ import {
   nextDropLifecycle,
   reflowDrops,
   shortTxid,
+  visualDropLimit,
   type MatrixDrop,
   type MempoolTransaction,
 } from "@/lib/transactions";
@@ -189,7 +190,7 @@ export function MempoolMatrix() {
 
     const resize = () => {
       const nextViewport = { width: window.innerWidth, height: window.innerHeight };
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      const ratio = Math.min(window.devicePixelRatio || 1, nextViewport.width < 640 ? 1.25 : 2);
       canvas.width = Math.floor(nextViewport.width * ratio);
       canvas.height = Math.floor(nextViewport.height * ratio);
       canvas.style.width = `${nextViewport.width}px`;
@@ -197,7 +198,7 @@ export function MempoolMatrix() {
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       dropsRef.current = viewport.width > 0
         ? reflowDrops(dropsRef.current, viewport, nextViewport)
-        : transactionsRef.current.map((transaction) => createDrop(transaction, nextViewport.width, nextViewport.height));
+        : transactionsRef.current.slice(0, visualDropLimit(nextViewport.width)).map((transaction) => createDrop(transaction, nextViewport.width, nextViewport.height));
       viewport = nextViewport;
     };
 
@@ -520,11 +521,20 @@ async function inspectTransaction(
 }
 
 function syncDrops(drops: MatrixDrop[], transactions: MempoolTransaction[], width: number, height: number) {
+  const limit = visualDropLimit(width);
+  const retained = new Set(transactions.map((transaction) => transaction.txid));
+  for (let index = drops.length - 1; index >= 0; index -= 1) {
+    if (!retained.has(drops[index].txid)) drops.splice(index, 1);
+  }
   const current = new Set(drops.map((drop) => drop.txid));
   for (const transaction of transactions) {
-    if (!current.has(transaction.txid)) drops.push(createDrop(transaction, width, height));
+    if (drops.length >= limit) break;
+    if (!current.has(transaction.txid)) {
+      drops.push(createDrop(transaction, width, height));
+      current.add(transaction.txid);
+    }
   }
-  if (drops.length > 140) drops.splice(0, drops.length - 140);
+  if (drops.length > limit) drops.splice(0, drops.length - limit);
 }
 
 function drawBackground(
@@ -566,7 +576,8 @@ function drawMatrix(
   focusedTxid: string | null,
 ) {
   context.textAlign = "center"; context.textBaseline = "middle";
-  const floorY = ambient ? height - 28 : height - (width < 640 ? 182 : 112);
+  const mobile = width < 640;
+  const floorY = ambient ? height - 28 : height - (mobile ? 182 : 112);
   for (const drop of drops) {
     if (!paused) {
       const resetY = -80 - ((drop.x + drop.cycle * 97) % Math.max(140, height * 0.55));
@@ -584,7 +595,7 @@ function drawMatrix(
     const palette = feePalette(classifyFee(drop.feeRate, fees));
     if (focused) drawSearchBeam(context, drop.x, drop.y, floorY, palette.dot);
     context.font = `${near ? 700 : 500} ${focused ? drop.fontSize * 1.18 : drop.fontSize}px ui-monospace, monospace`;
-    context.shadowBlur = focused ? 28 : near ? 18 : palette.glow;
+    context.shadowBlur = focused ? (mobile ? 14 : 28) : mobile ? 0 : near ? 18 : palette.glow;
     context.shadowColor = palette.shadow;
 
     if (drop.phase === "dissolve") {

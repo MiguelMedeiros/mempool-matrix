@@ -68,6 +68,12 @@ function hashNumber(value: string, offset: number): number {
   return Number.parseInt(sample, 16) / 0xffffffff;
 }
 
+export function visualDropLimit(width: number): number {
+  if (width < 640) return 48;
+  if (width < 1024) return 96;
+  return 140;
+}
+
 export function reflowDrops(
   drops: MatrixDrop[],
   previous: { width: number; height: number },

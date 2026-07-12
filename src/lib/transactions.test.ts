@@ -6,6 +6,7 @@ import {
   normalizeTransaction,
   reflowDrops,
   shortTxid,
+  visualDropLimit,
 } from "./transactions";
 
 const tx = {
@@ -50,6 +51,12 @@ describe("mergeTransactions", () => {
 });
 
 describe("matrix presentation", () => {
+  it("uses a smaller visual budget on phones", () => {
+    expect(visualDropLimit(390)).toBe(48);
+    expect(visualDropLimit(768)).toBe(96);
+    expect(visualDropLimit(1440)).toBe(140);
+  });
+
   it("slows near the floor, impacts, dissolves, then resets above the viewport", () => {
     const falling = nextDropLifecycle({ phase: "falling", phaseAge: 0, y: 690, speed: 120, cycle: 0 }, 0.1, 700, -200);
     expect(falling.phase).toBe("impact");

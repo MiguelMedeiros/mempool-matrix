@@ -17,6 +17,7 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 - Compact six-metric live HUD with transaction arrival rate
 - Installable PWA with cached shell and last-known mempool snapshot
 - Responsive canvas and safe-area-aware mobile interface
+- Adaptive rendering budget: stable 48-drop mobile pool, reduced mobile DPR, and zero per-glyph glow in the normal mobile rain
 - Node-backed data via the local mempool.space stack on `zero`
 - Private Tailscale deployment
 
