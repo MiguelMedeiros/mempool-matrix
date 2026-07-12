@@ -44,11 +44,11 @@ button {
 
 .tx-search-sheet {
   position: absolute;
-  right: 0;
+  right: auto;
   bottom: 0;
-  left: 0;
-  width: auto;
-  max-width: none;
+  left: 12px;
+  width: min(360px, calc(100vw - 24px));
+  max-width: 360px;
   max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
   overflow-x: hidden;
   overflow-y: auto;
@@ -63,6 +63,7 @@ button {
     bottom: auto;
     left: 50%;
     width: min(42rem, calc(100vw - 3rem));
+    max-width: 42rem;
     transform: translateX(-50%);
     border-radius: 1rem;
   }
