@@ -1,6 +1,8 @@
 services:
   mempool-matrix:
-    build: .
+    build:
+      context: .
+      network: host
     container_name: mempool-matrix
     restart: unless-stopped
     environment:
