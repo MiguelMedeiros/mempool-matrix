@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Sparkline } from "@/components/sparkline";
+import { useMempoolHistory } from "@/hooks/use-mempool-history";
 import {
   blockAnimationProgress,
   classifyFee,
@@ -16,6 +19,7 @@ import {
   type TransactionDetail,
   type VisualMode,
 } from "@/lib/experience";
+import { transactionRates } from "@/lib/history";
 import type { MempoolSnapshot } from "@/lib/mempool";
 import {
   createDrop,
@@ -110,6 +114,7 @@ export function MempoolMatrix() {
   const [easter, setEaster] = useState<EasterState | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "invalid" | "not-found">("idle");
+  const { points: historyPoints } = useMempoolHistory("1h", 60);
 
   const tone = useCallback((frequency: number, duration = 0.12, volume = 0.025) => {
     const audio = audioRef.current;
@@ -436,6 +441,10 @@ export function MempoolMatrix() {
   const pressure = getPressure(snapshot.stats.vsize);
   const isAmbient = mode === "ambient";
   const highlights = detail ? detectHighlights(detail) : [];
+  const transactionHistory = historyPoints.map((point) => point.transactions);
+  const vsizeHistory = historyPoints.map((point) => point.vsize);
+  const feeHistory = historyPoints.map((point) => point.fastestFee);
+  const arrivalHistory = transactionRates(historyPoints);
 
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-[#010302] text-emerald-50">
@@ -459,9 +468,11 @@ export function MempoolMatrix() {
       {easter && (
         <div className={`pointer-events-none absolute inset-0 z-[60] px-5 ${easter.kind === "red-pill" || easter.kind === "agent" ? "bg-red-950/15" : easter.kind === "zion" ? "bg-amber-950/15" : ""}`}>
           {easter.kind === "rabbit" && <div className="matrix-rabbit absolute bottom-[30%] font-mono text-4xl">🐇</div>}
-          <div className="matrix-easter absolute left-3 top-1/2 w-[min(360px,calc(100vw-24px))] -translate-y-1/2 border-y border-emerald-200/25 bg-black/70 px-5 py-6 text-center backdrop-blur-md">
-            <div className={`font-mono text-xl font-bold tracking-[.08em] sm:text-3xl ${easter.kind === "red-pill" || easter.kind === "agent" ? "text-red-300" : easter.kind === "zion" ? "text-amber-300" : "text-emerald-200"}`}>{easter.title}</div>
-            <div className="mt-3 font-mono text-[11px] uppercase tracking-[.16em] text-white/55 sm:text-sm">{easter.subtitle}</div>
+          <div className="absolute inset-x-0 top-1/2 flex justify-center px-3">
+            <div className="matrix-easter w-full max-w-[360px] border-y border-emerald-200/25 bg-black/70 px-5 py-6 text-center backdrop-blur-md">
+              <div className={`font-mono text-xl font-bold tracking-[.08em] sm:text-3xl ${easter.kind === "red-pill" || easter.kind === "agent" ? "text-red-300" : easter.kind === "zion" ? "text-amber-300" : "text-emerald-200"}`}>{easter.title}</div>
+              <div className="mt-3 font-mono text-[11px] uppercase tracking-[.16em] text-white/55 sm:text-sm">{easter.subtitle}</div>
+            </div>
           </div>
         </div>
       )}
@@ -603,13 +614,19 @@ export function MempoolMatrix() {
               </div>
             )}
 
-            <div className="mx-auto grid w-full grid-cols-3 gap-x-3 gap-y-4 rounded-2xl border border-emerald-300/15 bg-black/70 p-4 backdrop-blur-xl sm:gap-4 lg:max-w-6xl lg:grid-cols-6 lg:gap-6 lg:px-6">
-              <Metric label="transactions" value={formatCompact(snapshot.stats.count)} />
-              <Metric label="virtual size" value={`${(snapshot.stats.vsize / 1_000_000).toFixed(1)} MB`} />
-              <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} />
+            <div className="mx-auto grid w-full grid-cols-3 gap-x-3 gap-y-3 rounded-2xl border border-emerald-300/15 bg-black/70 p-4 backdrop-blur-xl sm:gap-x-4 lg:max-w-6xl lg:grid-cols-6 lg:gap-x-6 lg:px-6">
+              <div className="col-span-3 flex items-center justify-between lg:col-span-6">
+                <span className="font-mono text-[8px] uppercase tracking-[.16em] text-emerald-100/25">60 minute history</span>
+                <Link href="/stats" className="pointer-events-auto font-mono text-[8px] uppercase tracking-[.16em] text-emerald-300/60 underline decoration-emerald-400/25 underline-offset-4">
+                  full statistics ↗
+                </Link>
+              </div>
+              <Metric label="transactions" value={formatCompact(snapshot.stats.count)} history={transactionHistory} historyLabel="Transaction count over the last hour" />
+              <Metric label="virtual size" value={`${(snapshot.stats.vsize / 1_000_000).toFixed(1)} MB`} history={vsizeHistory} historyLabel="Virtual mempool size over the last hour" />
+              <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} history={feeHistory} historyLabel="Fastest fee estimate over the last hour" />
               <Metric label="height" value={String(snapshot.block.height || "—")} />
               <Metric label="last block" value={timeAgo(snapshot.block.timestamp)} />
-              <Metric label="arrival rate" value={arrivalRate > 0 ? `${arrivalRate} tx/s` : "sampling"} />
+              <Metric label="arrival rate" value={arrivalRate > 0 ? `${arrivalRate} tx/s` : "sampling"} history={arrivalHistory} historyLabel="Transaction arrival rate over the last hour" />
             </div>
           </section>
         </>
@@ -696,7 +713,7 @@ function drawMatrix(
 ) {
   context.textAlign = "center"; context.textBaseline = "middle";
   const mobile = width < 640;
-  const floorY = ambient ? height - 28 : height - (mobile ? 182 : 112);
+  const floorY = ambient ? height - 28 : height - (mobile ? 230 : 160);
   for (const drop of drops) {
     if (!paused) {
       const resetY = -80 - ((drop.x + drop.cycle * 97) % Math.max(140, height * 0.55));
@@ -920,8 +937,26 @@ function ControlButton({ label, mobileLabel, onClick, active = false }: { label:
   return <button aria-label={label} onClick={onClick} className={`min-h-11 min-w-11 rounded-full border px-3 py-2 font-mono text-base uppercase leading-none tracking-[.1em] backdrop-blur-md transition sm:min-h-0 sm:min-w-9 sm:text-[9px] sm:tracking-[.16em] ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0"><div className="truncate font-mono text-[9px] uppercase tracking-[0.09em] text-emerald-300/60">{label}</div><div className="mt-1.5 truncate font-mono text-[15px] font-semibold text-emerald-50 sm:text-base">{value}</div></div>;
+function Metric({
+  label,
+  value,
+  history,
+  historyLabel,
+}: {
+  label: string;
+  value: string;
+  history?: number[];
+  historyLabel?: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="truncate font-mono text-[9px] uppercase tracking-[0.09em] text-emerald-300/60">{label}</div>
+      <div className="mt-1.5 truncate font-mono text-[15px] font-semibold text-emerald-50 sm:text-base">{value}</div>
+      <div className="mt-2">
+        <Sparkline values={history ?? []} label={historyLabel ?? `${label} history`} />
+      </div>
+    </div>
+  );
 }
 
 function TinyMetric({ label, value }: { label: string; value: string }) {

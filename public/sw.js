@@ -1,5 +1,5 @@
-const CACHE = "mempool-matrix-v2";
-const SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
+const CACHE = "mempool-matrix-v3";
+const SHELL = ["/", "/stats", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
@@ -20,7 +20,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response.ok && (url.pathname === "/" || url.pathname === "/api/mempool")) {
+        if (response.ok && (url.pathname === "/" || url.pathname === "/stats" || url.pathname === "/api/mempool")) {
           const copy = response.clone();
           caches.open(CACHE).then((cache) => cache.put(event.request, copy));
         }

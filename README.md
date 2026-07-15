@@ -15,6 +15,8 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 - Rare-event badges for high-value, high-fee, consolidation, and fan-out transactions
 - Mobile configuration sheet for visual mode and opt-in Web Audio sonification
 - Compact six-metric live HUD with transaction arrival rate
+- Persistent 30-day backend history for transaction count, virtual size, fee estimates, and block telemetry
+- Inline one-hour sparklines plus a responsive `/stats` dashboard with selectable time ranges
 - Installable PWA with cached shell and last-known mempool snapshot
 - Responsive canvas and safe-area-aware mobile interface
 - Adaptive rendering budget: stable 48-drop mobile pool, reduced mobile DPR, and zero per-glyph glow in the normal mobile rain
@@ -49,3 +51,16 @@ docker compose up -d --build
 ```
 
 By default it publishes port `3033` on `zero`; the host's containerized Tailscale endpoint makes it reachable privately at the zero Tailscale address.
+
+Historical metrics are sampled every 60 seconds and stored as daily JSONL files in the
+`./data` bind mount. The default retention is 30 days. Both values can be adjusted before
+starting Compose:
+
+```bash
+MEMPOOL_HISTORY_INTERVAL_MS=60000 \
+MEMPOOL_HISTORY_RETENTION_DAYS=30 \
+docker compose up -d --build
+```
+
+The history API is available at `/api/mempool/history?range=24h&limit=480`. Supported
+ranges are `1h`, `6h`, `24h`, `7d`, and `30d`.

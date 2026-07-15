@@ -7,8 +7,13 @@ services:
     restart: unless-stopped
     environment:
       MEMPOOL_API_URL: http://mempool-web:8080/api
+      MEMPOOL_HISTORY_DIR: /data/mempool-history
+      MEMPOOL_HISTORY_INTERVAL_MS: ${MEMPOOL_HISTORY_INTERVAL_MS:-60000}
+      MEMPOOL_HISTORY_RETENTION_DAYS: ${MEMPOOL_HISTORY_RETENTION_DAYS:-30}
     ports:
       - "${PORT:-3033}:3000"
+    volumes:
+      - ./data:/data
     mem_limit: 512m
     networks:
       - bitcoin
