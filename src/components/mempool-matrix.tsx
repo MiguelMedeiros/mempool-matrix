@@ -603,7 +603,7 @@ export function MempoolMatrix() {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-x-3 gap-y-4 rounded-2xl border border-emerald-300/15 bg-black/70 p-4 backdrop-blur-xl sm:max-w-3xl sm:grid-cols-5 sm:gap-4">
+            <div className="mx-auto grid w-full grid-cols-3 gap-x-3 gap-y-4 rounded-2xl border border-emerald-300/15 bg-black/70 p-4 backdrop-blur-xl sm:gap-4 lg:max-w-6xl lg:grid-cols-6 lg:gap-6 lg:px-6">
               <Metric label="transactions" value={formatCompact(snapshot.stats.count)} />
               <Metric label="virtual size" value={`${(snapshot.stats.vsize / 1_000_000).toFixed(1)} MB`} />
               <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} />
