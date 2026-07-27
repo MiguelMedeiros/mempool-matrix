@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 20.9 or newer
+- Node.js 22.22 or newer (the maintained CI and container baseline is Node.js 22.23.1)
 - npm (the lockfile is authoritative)
 - Git
 - Docker with the Compose plugin for container contract tests and smoke checks

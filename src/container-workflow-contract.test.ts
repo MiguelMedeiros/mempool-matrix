@@ -59,11 +59,11 @@ describe("container workflow security contract", () => {
     const verifiedPins = new Set([
       checkoutNode24Pin,
       "aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25",
-      "docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8",
-      "docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9",
-      "docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051",
-      "docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f",
-      "docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130",
+      "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a",
+      "docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7",
+      "docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302",
+      "docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c",
+      "docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8",
     ]);
     expect(uses.length).toBeGreaterThan(0);
     for (const action of uses) {

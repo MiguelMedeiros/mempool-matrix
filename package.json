@@ -1,6 +1,6 @@
 {
   "name": "mempool-matrix",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -37,7 +37,7 @@
     "@napi-rs/wasm-runtime": "1.1.6"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=22.22.0"
   },
   "overrides": {
     "postcss": "8.5.23",

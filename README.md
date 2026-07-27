@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/MiguelMedeiros/mempool-matrix/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/MiguelMedeiros/mempool-matrix/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-2ea44f"></a>
-  <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/node-%3E%3D20.9-3c873a"></a>
+  <a href="package.json"><img alt="Node.js 22.22 or newer" src="https://img.shields.io/badge/node-%3E%3D22.22-3c873a"></a>
 </p>
 
 <p align="center">
@@ -46,6 +46,11 @@ node, or source of fee guarantees.
 
 Clone the repository and build the current image locally:
 
+Before the first public SemVer tag, build from source as shown below. SemVer tags
+publish a GHCR multi-architecture image for `linux/amd64` and `linux/arm64` with
+an SBOM and provenance; verify the release workflow and immutable digest before
+using a future registry artifact.
+
 ```bash
 git clone https://github.com/MiguelMedeiros/mempool-matrix.git
 cd mempool-matrix
@@ -69,7 +74,7 @@ before exposing or upgrading the app.
 
 ### Local development
 
-Node.js 20.9 or newer and npm are required.
+Node.js 22.22 or newer and npm are required.
 
 ```bash
 npm ci
@@ -117,6 +122,7 @@ official App Store. See [Umbrel packaging status](docs/umbrel.md).
 | [Architecture](docs/architecture.md) | UI, server routes, safe fetching, and persistence |
 | [Security](docs/security.md) | Threat model, SSRF controls, authentication, and deployment boundaries |
 | [Docker](docs/docker.md) | Current Compose workflow, persistence, health, and image status |
+| [Releasing](docs/releasing.md) | Publication gates and release verification checklist |
 | [Umbrel](docs/umbrel.md) | Package design and current status |
 | [Development](docs/development.md) | Commands, quality gates, and contribution workflow |
 

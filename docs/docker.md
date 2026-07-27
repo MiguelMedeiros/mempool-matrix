@@ -5,9 +5,11 @@ The final image uses Next.js standalone output and runs as UID/GID `1000:1000`.
 Its application payload is limited to the traced server, static assets, and
 public assets. The pinned Node-on-Alpine base and its standard Alpine utilities
 remain; npm, npx, Corepack, and Yarn are unavailable in the merged runtime
-filesystem. There is no documented prebuilt
-image; build the checkout locally instead of using an unverified registry
-reference.
+filesystem. Before the first public tag, build from source instead of using an
+unverified registry reference. SemVer tags publish a GHCR multi-architecture
+image for `linux/amd64` and `linux/arm64` with an SBOM and provenance, but the
+result is usable only after the tagged workflow and immutable digest are
+verified.
 
 ## Compose workflow
 
@@ -220,8 +222,9 @@ release notes before downgrading across versions.
 
 ## Image status
 
-No prebuilt image is documented. This guide supports local builds with
-`docker compose up --build`. The Dockerfile is multi-stage and pins its Node base
-by multi-architecture digest, but this does not itself claim that every
-architecture has been runtime-tested. Do not infer a public registry artifact,
-SBOM, provenance, or published architecture matrix from the local workflow.
+Before the first public SemVer tag, no public registry artifact is claimed; use
+the local `docker compose up --build` path. SemVer tags publish GHCR images for
+`linux/amd64` and `linux/arm64` through the container workflow with an SBOM and
+provenance. A tag alone is not release evidence: confirm both architecture jobs,
+the publish job, package visibility, and the recorded immutable digest before
+documenting or deploying an image reference.
