@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     environment:
       MEMPOOL_API_URL: http://mempool-web:8080/api
+      MEMPOOL_CONFIG_PATH: /data/runtime-config.json
+      MEMPOOL_SETTINGS_TOKEN: ${MEMPOOL_SETTINGS_TOKEN:-}
       MEMPOOL_HISTORY_DIR: /data/mempool-history
       MEMPOOL_HISTORY_INTERVAL_MS: ${MEMPOOL_HISTORY_INTERVAL_MS:-60000}
       MEMPOOL_HISTORY_RETENTION_DAYS: ${MEMPOOL_HISTORY_RETENTION_DAYS:-30}

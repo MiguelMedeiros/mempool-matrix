@@ -1,3 +1,5 @@
+export { normalizeTransactionDetail, type TransactionDetail } from "./transaction-detail";
+
 export type FeeRecommendations = {
   fastestFee: number;
   halfHourFee: number;
@@ -24,20 +26,6 @@ export type ExperienceSnapshot = {
   count: number;
   vsize: number;
   blockHeight: number;
-};
-
-export type TransactionDetail = {
-  txid: string;
-  fee: number;
-  vsize: number;
-  value: number;
-  feeRate: number;
-  inputs: number;
-  outputs: number;
-  rbf: boolean;
-  confirmed: boolean;
-  blockHeight?: number;
-  blockTime?: number;
 };
 
 const MODES: VisualMode[] = ["matrix", "constellation", "heatmap", "race", "ambient"];
@@ -117,35 +105,4 @@ export function parseMatrixCommand(value: string): MatrixCommand | null {
 export function parseTransactionSearch(value: string): string | null {
   const match = value.trim().match(/(?:^|[^0-9a-f])([0-9a-f]{64})(?:$|[^0-9a-f])/i);
   return match?.[1]?.toLowerCase() ?? null;
-}
-
-export function normalizeTransactionDetail(raw: Record<string, unknown>): TransactionDetail {
-  const vin = Array.isArray(raw.vin) ? raw.vin as Array<Record<string, unknown>> : [];
-  const vout = Array.isArray(raw.vout) ? raw.vout as Array<Record<string, unknown>> : [];
-  const fee = safeNumber(raw.fee);
-  const weight = Math.max(4, safeNumber(raw.weight));
-  const vsize = Math.ceil(weight / 4);
-  const status = raw.status && typeof raw.status === "object"
-    ? raw.status as Record<string, unknown>
-    : {};
-  return {
-    txid: typeof raw.txid === "string" ? raw.txid : "",
-    fee,
-    vsize,
-    value: vout.reduce((sum, output) => sum + safeNumber(output.value), 0),
-    feeRate: Math.round((fee / vsize) * 10) / 10,
-    inputs: vin.length,
-    outputs: vout.length,
-    rbf: vin.some((input) => safeNumber(input.sequence) < 0xfffffffe),
-    confirmed: status.confirmed === true,
-    ...(status.confirmed === true ? {
-      blockHeight: safeNumber(status.block_height),
-      blockTime: safeNumber(status.block_time),
-    } : {}),
-  };
-}
-
-function safeNumber(value: unknown): number {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.max(0, number) : 0;
 }

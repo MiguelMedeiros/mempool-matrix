@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchTransactionDetail } from "@/lib/mempool";
+import { safeSourceFetch } from "@/lib/source-fetch";
+import { getActiveMempoolBaseUrl } from "@/lib/runtime-config";
 
 export const dynamic = "force-dynamic";
 
@@ -9,15 +11,16 @@ export async function GET(
 ) {
   try {
     const { txid } = await params;
-    const source = process.env.MEMPOOL_API_URL ?? "http://127.0.0.1:3000/api";
-    return NextResponse.json(await fetchTransactionDetail(fetch, source, txid), {
+    const source = await getActiveMempoolBaseUrl();
+    return NextResponse.json(await fetchTransactionDetail(safeSourceFetch, source, txid), {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
     const invalid = error instanceof Error && error.message === "Invalid transaction id";
+    const notFound = error instanceof Error && error.message === "Transaction not found";
     return NextResponse.json(
-      { error: invalid ? "Invalid transaction id" : "Transaction unavailable" },
-      { status: invalid ? 400 : 503 },
+      { error: invalid ? "Invalid transaction id" : notFound ? "Transaction not found" : "Transaction unavailable" },
+      { status: invalid ? 400 : notFound ? 404 : 503 },
     );
   }
 }

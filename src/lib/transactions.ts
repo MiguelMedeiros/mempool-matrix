@@ -63,6 +63,22 @@ export function shortTxid(txid: string, length = 20): string {
   return `${txid.slice(0, edge)}…${txid.slice(-edge)}`;
 }
 
+export function advanceRacePosition(
+  position: number,
+  speed: number,
+  dt: number,
+  viewportWidth: number,
+  labelWidth: number,
+  gap = 24,
+): number {
+  const leftBoundary = -Math.max(0, labelWidth) - gap;
+  const rightBoundary = Math.max(0, viewportWidth) + gap;
+  const cycleWidth = rightBoundary - leftBoundary;
+  const next = position + Math.max(0, speed) * Math.max(0, dt);
+  if (next < rightBoundary || cycleWidth <= 0) return next;
+  return leftBoundary + ((next - rightBoundary) % cycleWidth);
+}
+
 function hashNumber(value: string, offset: number): number {
   const sample = value.slice(offset, offset + 8).padEnd(8, "0");
   return Number.parseInt(sample, 16) / 0xffffffff;

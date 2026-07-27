@@ -26,6 +26,10 @@ export function StatisticsDashboard() {
   const from = points[0]?.fetchedAt;
   const to = latest?.fetchedAt;
   const series = useMemo(() => buildSeries(points), [points]);
+  const timestamps = useMemo(
+    () => points.map((point) => point.fetchedAt),
+    [points],
+  );
 
   return (
     <main className="relative h-dvh w-full overflow-y-auto bg-[#010302] text-emerald-50">
@@ -99,6 +103,7 @@ export function StatisticsDashboard() {
             title="transactions"
             description="Transactions currently waiting in the mempool."
             series={[series.transactions]}
+            timestamps={timestamps}
             formatValue={formatCompact}
             from={from}
             to={to}
@@ -107,6 +112,7 @@ export function StatisticsDashboard() {
             title="virtual size"
             description="Aggregate virtual size of unconfirmed transactions."
             series={[series.vsize]}
+            timestamps={timestamps}
             formatValue={formatMegabytes}
             from={from}
             to={to}
@@ -115,6 +121,7 @@ export function StatisticsDashboard() {
             title="transaction arrival"
             description="Net transaction growth between collector samples."
             series={[series.arrival]}
+            timestamps={timestamps}
             formatValue={(value) => `${value.toFixed(1)} tx/s`}
             from={from}
             to={to}
@@ -123,6 +130,7 @@ export function StatisticsDashboard() {
             title="mempool fees"
             description="Total fees currently attached to unconfirmed transactions."
             series={[series.totalFee]}
+            timestamps={timestamps}
             formatValue={formatBtc}
             from={from}
             to={to}
@@ -131,6 +139,7 @@ export function StatisticsDashboard() {
             title="fee estimates"
             description="Recommended confirmation targets from the local mempool node."
             series={series.fees}
+            timestamps={timestamps}
             formatValue={(value) => `${Math.round(value)} sat/vB`}
             from={from}
             to={to}
@@ -139,6 +148,7 @@ export function StatisticsDashboard() {
             title="latest block size"
             description="Size of the most recently indexed Bitcoin block."
             series={[series.blockSize]}
+            timestamps={timestamps}
             formatValue={formatMegabytes}
             from={from}
             to={to}

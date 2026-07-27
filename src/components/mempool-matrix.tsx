@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { DataSourceSettings } from "@/components/data-source-settings";
 import { Sparkline } from "@/components/sparkline";
+import { useDataSourceSettings } from "@/hooks/use-data-source-settings";
 import { useMempoolHistory } from "@/hooks/use-mempool-history";
 import {
   blockAnimationProgress,
@@ -19,9 +21,15 @@ import {
   type TransactionDetail,
   type VisualMode,
 } from "@/lib/experience";
+import {
+  buildFeeDensityBins,
+  createFeeSpectrumAxis,
+  feeRatePosition,
+} from "@/lib/fee-spectrum";
 import { transactionRates } from "@/lib/history";
 import type { MempoolSnapshot } from "@/lib/mempool";
 import {
+  advanceRacePosition,
   createDrop,
   mergeTransactions,
   nextDropLifecycle,
@@ -32,7 +40,7 @@ import {
   type MempoolTransaction,
 } from "@/lib/transactions";
 
-type EasterKind = MatrixCommand | "wake" | "deja-vu" | "kung-fu" | "knock" | "agent";
+type EasterKind = MatrixCommand | "wake" | "deja-vu" | "kung-fu" | "knock";
 type EasterState = { kind: EasterKind; title: string; subtitle: string; until: number };
 
 const EASTER_COPY: Record<EasterKind, [string, string]> = {
@@ -45,7 +53,6 @@ const EASTER_COPY: Record<EasterKind, [string, string]> = {
   "deja-vu": ["DÉJÀ VU", "A GLITCH IN THE MEMPOOL · RBF DETECTED  🐈‍⬛"],
   "kung-fu": ["I KNOW KUNG FU", "Priority transaction detected."],
   knock: ["KNOCK, KNOCK, SATOSHI.", "A new block is entering the system."],
-  agent: ["SYSTEM ANOMALY", "Extreme fee agent detected."],
 };
 
 const MODES: Array<{ id: VisualMode; label: string }> = [
@@ -88,6 +95,7 @@ export function MempoolMatrix() {
   const blockPulseRef = useRef(0);
   const audioRef = useRef<AudioContext | null>(null);
   const modeRef = useRef<VisualMode>("matrix");
+  const modeStorageReadyRef = useRef(false);
   const pausedRef = useRef(false);
   const pressureRef = useRef(getPressure(0));
   const feesRef = useRef(EMPTY.fees);
@@ -114,6 +122,7 @@ export function MempoolMatrix() {
   const [easter, setEaster] = useState<EasterState | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "invalid" | "not-found">("idle");
+  const dataSourceSettings = useDataSourceSettings();
   const { points: historyPoints } = useMempoolHistory("1h", 60);
 
   const tone = useCallback((frequency: number, duration = 0.12, volume = 0.025) => {
@@ -142,7 +151,7 @@ export function MempoolMatrix() {
       easterRef.current = null;
       setEaster(null);
     }, duration);
-    tone(kind === "red-pill" || kind === "agent" ? 110 : kind === "zion" ? 164 : 523, 0.28, 0.025);
+    tone(kind === "red-pill" ? 110 : kind === "zion" ? 164 : 523, 0.28, 0.025);
   }, [tone]);
 
   const refresh = useCallback(async () => {
@@ -177,9 +186,7 @@ export function MempoolMatrix() {
           else tone(73, 1.4, 0.08);
           if (navigator.vibrate) navigator.vibrate([80, 40, 160]);
         } else if (newCount > 0) {
-          const extreme = newTransactions.find((transaction) => transaction.feeRate >= Math.max(100, next.fees.fastestFee * 4));
-          if (extreme && !easterRef.current) triggerEaster(extreme.feeRate >= 200 ? "agent" : "kung-fu");
-          else tone(380 + Math.min(500, newCount * 22), 0.06, 0.012);
+          tone(380 + Math.min(500, newCount * 22), 0.06, 0.012);
         }
       }
     } catch {
@@ -209,7 +216,9 @@ export function MempoolMatrix() {
 
   useEffect(() => {
     modeRef.current = mode;
-    window.localStorage.setItem("mempool-matrix-mode", mode);
+    if (modeStorageReadyRef.current) {
+      window.localStorage.setItem("mempool-matrix-mode", mode);
+    }
   }, [mode]);
 
   useEffect(() => {
@@ -218,7 +227,10 @@ export function MempoolMatrix() {
 
   useEffect(() => {
     const restore = window.setTimeout(() => {
-      setMode(normalizeMode(window.localStorage.getItem("mempool-matrix-mode")));
+      const restoredMode = normalizeMode(window.localStorage.getItem("mempool-matrix-mode"));
+      modeRef.current = restoredMode;
+      modeStorageReadyRef.current = true;
+      setMode(restoredMode);
       const params = new URLSearchParams(window.location.search);
       if (params.get("search") === "1") setSearchOpen(true);
       if (params.get("settings") === "1") setSettingsOpen(true);
@@ -237,6 +249,13 @@ export function MempoolMatrix() {
     let frame = 0;
     let last = performance.now();
     let viewport = { width: 0, height: 0 };
+    const racePositions = new Map<string, number>();
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let reducedMotion = motionPreference.matches;
+    const updateMotionPreference = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+    };
+    motionPreference.addEventListener("change", updateMotionPreference);
 
     const resize = () => {
       const nextViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -266,9 +285,9 @@ export function MempoolMatrix() {
       if (modeRef.current === "constellation") {
         drawConstellation(context, dropsRef.current, width, height, dt, frame, pausedRef.current);
       } else if (modeRef.current === "heatmap") {
-        drawHeatmap(context, dropsRef.current, width, height, feesRef.current, frame);
+        drawHeatmap(context, dropsRef.current, width, height, feesRef.current, dt, pausedRef.current, reducedMotion);
       } else if (modeRef.current === "race") {
-        drawRace(context, dropsRef.current, width, height, feesRef.current, frame, pausedRef.current);
+        drawRace(context, dropsRef.current, width, height, feesRef.current, dt, pausedRef.current, racePositions);
       } else {
         drawMatrix(
           context,
@@ -315,12 +334,18 @@ export function MempoolMatrix() {
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerdown", select);
+      motionPreference.removeEventListener("change", updateMotionPreference);
     };
   }, []);
 
   const setVisualMode = (next: VisualMode) => {
     setMode(next);
     if (next === "ambient") setSelected(null);
+  };
+
+  const openSettings = () => {
+    setSettingsOpen(true);
+    void dataSourceSettings.refresh();
   };
 
   const toggleAudio = async () => {
@@ -466,11 +491,11 @@ export function MempoolMatrix() {
       )}
 
       {easter && (
-        <div className={`pointer-events-none absolute inset-0 z-[60] px-5 ${easter.kind === "red-pill" || easter.kind === "agent" ? "bg-red-950/15" : easter.kind === "zion" ? "bg-amber-950/15" : ""}`}>
+        <div className={`pointer-events-none absolute inset-0 z-[60] px-5 ${easter.kind === "red-pill" ? "bg-red-950/15" : easter.kind === "zion" ? "bg-amber-950/15" : ""}`}>
           {easter.kind === "rabbit" && <div className="matrix-rabbit absolute bottom-[30%] font-mono text-4xl">🐇</div>}
           <div className="absolute inset-x-0 top-1/2 flex justify-center px-3">
             <div className="matrix-easter w-full max-w-[360px] border-y border-emerald-200/25 bg-black/70 px-5 py-6 text-center backdrop-blur-md">
-              <div className={`font-mono text-xl font-bold tracking-[.08em] sm:text-3xl ${easter.kind === "red-pill" || easter.kind === "agent" ? "text-red-300" : easter.kind === "zion" ? "text-amber-300" : "text-emerald-200"}`}>{easter.title}</div>
+              <div className={`font-mono text-xl font-bold tracking-[.08em] sm:text-3xl ${easter.kind === "red-pill" ? "text-red-300" : easter.kind === "zion" ? "text-amber-300" : "text-emerald-200"}`}>{easter.title}</div>
               <div className="mt-3 font-mono text-[11px] uppercase tracking-[.16em] text-white/55 sm:text-sm">{easter.subtitle}</div>
             </div>
           </div>
@@ -524,7 +549,7 @@ export function MempoolMatrix() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-mono text-[11px] uppercase tracking-[.18em] text-emerald-300/70">configurações</div>
-                <div className="mt-1.5 text-base text-emerald-50/85">Visual e áudio da experiência.</div>
+                <div className="mt-1.5 text-base text-emerald-50/85">Visual, áudio e fonte de dados.</div>
               </div>
               <button type="button" onClick={() => setSettingsOpen(false)} className="shrink-0 rounded-full border border-emerald-300/15 px-3 py-2 font-mono text-[10px] uppercase text-emerald-100/65">fechar</button>
             </div>
@@ -543,6 +568,7 @@ export function MempoolMatrix() {
               <span>som ambiente</span>
               <span className={`rounded-full px-3 py-1 text-xs ${audioEnabled ? "bg-emerald-300/20 text-emerald-100" : "bg-white/5 text-white/40"}`}>{audioEnabled ? "ligado" : "desligado"}</span>
             </button>
+            <DataSourceSettings controller={dataSourceSettings} />
           </div>
         </div>
       )}
@@ -555,7 +581,9 @@ export function MempoolMatrix() {
             <div>
               <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-emerald-300/80 sm:tracking-[0.26em]">
                 <span className={`size-2 rounded-full ${connected ? "animate-pulse bg-emerald-300" : "bg-amber-400"}`} />
-                {connected ? "zero node · live" : "offline cache · reconnecting"}
+                {connected
+                  ? `${dataSourceSettings.status?.label ?? "mempool source"} · live`
+                  : "offline cache · reconnecting"}
               </div>
               <button
                 onClick={tapTitle}
@@ -573,7 +601,7 @@ export function MempoolMatrix() {
             </div>
             <div className="pointer-events-auto hidden gap-2 sm:flex">
               <ControlButton label="search tx" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
-              <ControlButton label="settings" onClick={() => setSettingsOpen(true)} />
+              <ControlButton label="settings" onClick={openSettings} />
               <ControlButton label={paused ? "resume" : "pause"} onClick={() => setPaused((value) => !value)} />
               <ControlButton label="fullscreen" onClick={toggleFullscreen} />
             </div>
@@ -584,7 +612,7 @@ export function MempoolMatrix() {
             style={{ position: "fixed", left: "min(calc(100vw - 108px), 282px)", top: 12, width: 96 }}
           >
             <ControlButton label="search tx" mobileLabel={<SearchIcon />} onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
-            <ControlButton label="settings" mobileLabel={<SettingsIcon />} onClick={() => setSettingsOpen(true)} />
+            <ControlButton label="settings" mobileLabel={<SettingsIcon />} onClick={openSettings} />
             <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
             <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
           </div>
@@ -610,23 +638,33 @@ export function MempoolMatrix() {
                 </div>
                 {detail?.confirmed && <div className="mt-3 font-mono text-[9px] uppercase tracking-[.14em] text-sky-100/55">confirmed {timeAgo(detail.blockTime ?? 0)} ago · block {detail.blockHeight}</div>}
                 {highlights.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{highlights.map((highlight) => <span key={highlight} className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-1 font-mono text-[8px] uppercase tracking-[.15em] text-amber-100">⚡ {highlight}</span>)}</div>}
-                <a href={`/explorer/tx/${selected.txid}`} target="_blank" rel="noreferrer" className="mt-3 inline-block font-mono text-[9px] uppercase tracking-[.18em] text-emerald-300/70 underline decoration-emerald-400/30 underline-offset-4">open in our explorer ↗</a>
+                <Link href={`/tx/${selected.txid}`} className="mt-3 inline-block font-mono text-[9px] uppercase tracking-[.18em] text-emerald-300/70 underline decoration-emerald-400/30 underline-offset-4">full transaction breakdown ↗</Link>
               </div>
             )}
 
-            <div className="mx-auto grid w-full grid-cols-3 gap-x-3 gap-y-3 rounded-2xl border border-emerald-300/15 bg-black/70 p-4 backdrop-blur-xl sm:gap-x-4 lg:max-w-6xl lg:grid-cols-6 lg:gap-x-6 lg:px-6">
-              <div className="col-span-3 flex items-center justify-between lg:col-span-6">
+            <div className="mx-auto w-full rounded-2xl border border-emerald-300/15 bg-black/70 p-4 backdrop-blur-xl lg:max-w-6xl lg:px-6">
+              <div className="flex items-center justify-between">
                 <span className="font-mono text-[8px] uppercase tracking-[.16em] text-emerald-100/25">60 minute history</span>
                 <Link href="/stats" className="pointer-events-auto font-mono text-[8px] uppercase tracking-[.16em] text-emerald-300/60 underline decoration-emerald-400/25 underline-offset-4">
                   full statistics ↗
                 </Link>
               </div>
-              <Metric label="transactions" value={formatCompact(snapshot.stats.count)} history={transactionHistory} historyLabel="Transaction count over the last hour" />
-              <Metric label="virtual size" value={`${(snapshot.stats.vsize / 1_000_000).toFixed(1)} MB`} history={vsizeHistory} historyLabel="Virtual mempool size over the last hour" />
-              <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} history={feeHistory} historyLabel="Fastest fee estimate over the last hour" />
-              <Metric label="height" value={String(snapshot.block.height || "—")} />
-              <Metric label="last block" value={timeAgo(snapshot.block.timestamp)} />
-              <Metric label="arrival rate" value={arrivalRate > 0 ? `${arrivalRate} tx/s` : "sampling"} history={arrivalHistory} historyLabel="Transaction arrival rate over the last hour" />
+              <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(180px,.6fr)] sm:items-stretch sm:gap-5">
+                <div className="grid min-w-0 grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+                  <Metric label="transactions" value={formatCompact(snapshot.stats.count)} history={transactionHistory} historyLabel="Transaction count over the last hour" />
+                  <Metric label="virtual size" value={`${(snapshot.stats.vsize / 1_000_000).toFixed(1)} MB`} history={vsizeHistory} historyLabel="Virtual mempool size over the last hour" />
+                  <Metric label="next block" value={`${snapshot.fees.fastestFee} sat/vB`} history={feeHistory} historyLabel="Fastest fee estimate over the last hour" />
+                  <Metric label="arrival rate" value={arrivalRate > 0 ? `${arrivalRate} tx/s` : "sampling"} history={arrivalHistory} historyLabel="Transaction arrival rate over the last hour" />
+                </div>
+                <div className="grid grid-cols-2 items-center divide-x divide-emerald-300/10 rounded-xl border border-emerald-300/10 bg-emerald-950/20 px-1 py-2">
+                  <div className="min-w-0 px-2">
+                    <Metric label="height" value={String(snapshot.block.height || "—")} />
+                  </div>
+                  <div className="min-w-0 px-2">
+                    <Metric label="last block" value={timeAgo(snapshot.block.timestamp)} />
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         </>
@@ -675,7 +713,7 @@ function drawBackground(
   easter: EasterKind | null,
 ) {
   const gradient = context.createRadialGradient(width * 0.5, height * 0.32, 0, width * 0.5, height * 0.32, Math.max(width, height) * 0.9);
-  if (easter === "red-pill" || easter === "agent") {
+  if (easter === "red-pill") {
     gradient.addColorStop(0, "#280507"); gradient.addColorStop(0.55, "#0b0203"); gradient.addColorStop(1, "#010101");
   } else if (easter === "zion") {
     gradient.addColorStop(0, "#251405"); gradient.addColorStop(0.55, "#0c0702"); gradient.addColorStop(1, "#020101");
@@ -750,13 +788,6 @@ function drawMatrix(
       const fade = 1 - index / visible;
       context.fillStyle = index === 0 ? palette.head : palette.trail(fade * drop.opacity);
       context.fillText(bytes[index], renderX, drop.y - index * charStep * compression);
-    }
-    if (drop.feeRate >= Math.max(200, fees.fastestFee * 5)) {
-      context.save();
-      context.font = "700 8px ui-monospace, monospace";
-      context.fillStyle = "rgba(255,90,90,.85)";
-      context.fillText("AGENT", renderX, drop.y + 15);
-      context.restore();
     }
     if (drop.phase === "impact") drawTxRipple(context, renderX, floorY, impactProgress, palette.dot);
   }
@@ -865,35 +896,165 @@ function drawConstellation(context: CanvasRenderingContext2D, drops: MatrixDrop[
   context.shadowBlur = 0;
 }
 
-function drawHeatmap(context: CanvasRenderingContext2D, drops: MatrixDrop[], width: number, height: number, fees: MempoolSnapshot["fees"], frame: number) {
-  const tiers = ["low", "medium", "high", "priority", "extreme"] as const;
-  const groups = tiers.map((tier) => drops.filter((drop) => classifyFee(drop.feeRate, fees) === tier));
-  const top = Math.min(190, height * 0.25); const available = height - top - 120; const column = width / tiers.length;
-  groups.forEach((group, tierIndex) => {
-    const palette = feePalette(tiers[tierIndex]);
-    const barHeight = Math.min(available, 32 + group.length * 8);
-    const x = tierIndex * column + column * 0.15; const y = top + available - barHeight;
-    context.fillStyle = palette.bar; context.shadowBlur = 20; context.shadowColor = palette.shadow;
-    context.fillRect(x, y, column * 0.7, barHeight);
-    context.shadowBlur = 0; context.fillStyle = "rgba(220,255,230,.62)"; context.font = `${width < 640 ? 8 : 11}px ui-monospace,monospace`; context.textAlign = "center";
-    context.fillText(tiers[tierIndex], x + column * 0.35, top + available + 22);
-    context.fillText(`${group.length} tx`, x + column * 0.35, y - 12);
-    group.slice(0, 18).forEach((drop, index) => {
-      context.fillStyle = palette.dot; const jitter = Math.sin(frame * 0.02 + index * 8) * column * 0.08;
-      context.fillRect(x + column * 0.35 + jitter, top + available - 8 - index * Math.max(5, barHeight / 20), 2, 2);
-    });
+function drawHeatmap(
+  context: CanvasRenderingContext2D,
+  drops: MatrixDrop[],
+  width: number,
+  height: number,
+  fees: MempoolSnapshot["fees"],
+  dt: number,
+  paused: boolean,
+  reducedMotion: boolean,
+) {
+  const mobile = width < 640;
+  const plotLeft = mobile ? 14 : 24;
+  const plotRight = width - plotLeft;
+  const plotWidth = Math.max(1, plotRight - plotLeft);
+  const top = mobile ? Math.min(142, height * 0.3) : Math.min(184, height * 0.23);
+  const densityBaseline = Math.max(top + 170, height - (mobile ? 258 : 190));
+  const densityHeight = mobile ? 52 : 72;
+  const densityTop = densityBaseline - densityHeight;
+  const glyphTop = top + (mobile ? 54 : 68);
+  const glyphBottom = densityTop - 8;
+  const thresholdRates = [fees.minimumFee, fees.hourFee, fees.halfHourFee, fees.fastestFee];
+  const axis = createFeeSpectrumAxis(drops, thresholdRates);
+  const spectrumX = (rate: number) => plotLeft + feeRatePosition(rate, axis) * plotWidth;
+
+  context.save();
+  context.textBaseline = "middle";
+  context.textAlign = "left";
+  context.shadowBlur = 0;
+  context.fillStyle = "rgba(220,255,232,.55)";
+  context.font = `${mobile ? 9 : 11}px ui-monospace,monospace`;
+  context.fillText("FEE SPECTRUM · LOG SAT/VB", plotLeft, top - 16);
+
+  const markers = [
+    { short: "MIN", label: "MINIMUM", rate: fees.minimumFee },
+    { short: "1H", label: "1 HOUR", rate: fees.hourFee },
+    { short: "30M", label: "30 MIN", rate: fees.halfHourFee },
+    { short: "NEXT", label: "NEXT BLOCK", rate: fees.fastestFee },
+  ];
+  markers.forEach((marker, index) => {
+    const x = spectrumX(marker.rate);
+    const palette = feePalette(classifyFee(marker.rate, fees));
+    context.strokeStyle = palette.bar;
+    context.lineWidth = 1;
+    context.setLineDash(index === 0 ? [2, 5] : [4, 6]);
+    context.beginPath();
+    context.moveTo(x, top);
+    context.lineTo(x, densityBaseline);
+    context.stroke();
+
+    const showLabel = !mobile || index === 0 || index === markers.length - 1;
+    if (!showLabel) return;
+    const text = `${mobile ? marker.short : marker.label} ${marker.rate} SAT/VB`;
+    context.font = `${mobile ? 8 : 9}px ui-monospace,monospace`;
+    const textWidth = context.measureText(text).width;
+    const labelX = Math.max(plotLeft, Math.min(plotRight - textWidth, x - textWidth / 2));
+    const labelY = top + 8 + index * (mobile ? 12 : 13);
+    context.fillStyle = palette.head;
+    context.fillText(text, labelX, labelY);
   });
+  context.setLineDash([]);
+
+  const bins = buildFeeDensityBins(drops, axis, mobile ? 28 : 64);
+  const smoothedDensity = bins.map((bin, index) => (
+    ((bins[index - 1]?.vsize ?? bin.vsize) + bin.vsize * 2 + (bins[index + 1]?.vsize ?? bin.vsize)) / 4
+  ));
+  const maximumDensity = Math.max(1, ...smoothedDensity);
+  const densityGradient = context.createLinearGradient(plotLeft, 0, plotRight, 0);
+  densityGradient.addColorStop(0, feePalette("low").bar);
+  densityGradient.addColorStop(feeRatePosition(fees.hourFee, axis), feePalette("medium").bar);
+  densityGradient.addColorStop(feeRatePosition(fees.halfHourFee, axis), feePalette("high").bar);
+  densityGradient.addColorStop(feeRatePosition(fees.fastestFee, axis), feePalette("priority").bar);
+  densityGradient.addColorStop(1, feePalette("extreme").bar);
+
+  context.beginPath();
+  context.moveTo(plotLeft, densityBaseline);
+  smoothedDensity.forEach((density, index) => {
+    const x = plotLeft + ((index + 0.5) / smoothedDensity.length) * plotWidth;
+    const amplitude = Math.sqrt(density / maximumDensity);
+    const y = densityBaseline - 7 - amplitude * (densityHeight - 12);
+    context.lineTo(x, y);
+  });
+  context.lineTo(plotRight, densityBaseline);
+  context.closePath();
+  context.fillStyle = densityGradient;
+  context.shadowBlur = mobile ? 8 : 18;
+  context.shadowColor = feePalette("high").shadow;
+  context.fill();
+  context.shadowBlur = 0;
+  context.strokeStyle = "rgba(198,255,215,.32)";
+  context.lineWidth = 1;
+  context.stroke();
+
+  for (const drop of drops) {
+    const hash = Number.parseInt(drop.txid.slice(8, 16), 16) / 0xffffffff;
+    drop.x = spectrumX(drop.feeRate);
+    if (reducedMotion) {
+      drop.y = glyphTop + hash * Math.max(1, glyphBottom - glyphTop);
+    } else {
+      if (drop.y < glyphTop - 80 || drop.y > glyphBottom) {
+        drop.y = glyphTop - 12 - hash * Math.max(40, glyphBottom - glyphTop);
+      }
+      if (!paused) drop.y += drop.speed * dt * 0.48;
+    }
+
+    const palette = feePalette(classifyFee(drop.feeRate, fees));
+    const bytes = drop.txid.match(/.{1,2}/g)?.slice(0, mobile ? 2 : 3) ?? [];
+    const fontSize = mobile ? 8 : 10;
+    context.font = `600 ${fontSize}px ui-monospace,monospace`;
+    context.textAlign = "center";
+    context.shadowBlur = mobile ? 0 : palette.glow * 0.65;
+    context.shadowColor = palette.shadow;
+    bytes.forEach((byte, index) => {
+      context.fillStyle = index === 0 ? palette.head : palette.trail(drop.opacity * (1 - index / bytes.length));
+      context.fillText(byte, drop.x, drop.y - index * (fontSize + 2));
+    });
+  }
+
+  context.shadowBlur = 0;
+  context.textAlign = "left";
+  context.fillStyle = "rgba(211,255,224,.38)";
+  context.font = `${mobile ? 7 : 8}px ui-monospace,monospace`;
+  context.fillText("0", plotLeft, densityBaseline + 14);
+  context.textAlign = "right";
+  context.fillText(`${axis.maximumRate} SAT/VB`, plotRight, densityBaseline + 14);
+  context.textAlign = "left";
+  context.fillStyle = "rgba(170,255,198,.28)";
+  context.fillText("SAMPLED VSIZE DENSITY", plotLeft, densityTop - 10);
+  const caption = mobile
+    ? `RECENT SAMPLE · ${drops.length} TX · VSIZE-WEIGHTED, NOT FULL MEMPOOL`
+    : `RECENT NODE SAMPLE · ${drops.length} TX · DENSITY WEIGHTED BY SAMPLED VSIZE · NOT THE FULL MEMPOOL`;
+  context.fillText(caption, plotLeft, densityBaseline + 34);
+  context.restore();
 }
 
-function drawRace(context: CanvasRenderingContext2D, drops: MatrixDrop[], width: number, height: number, fees: MempoolSnapshot["fees"], frame: number, paused: boolean) {
+function drawRace(
+  context: CanvasRenderingContext2D,
+  drops: MatrixDrop[],
+  width: number,
+  height: number,
+  fees: MempoolSnapshot["fees"],
+  dt: number,
+  paused: boolean,
+  positions: Map<string, number>,
+) {
   const racers = drops.slice(-18); const top = Math.min(190, height * 0.24); const laneHeight = Math.max(18, Math.min(34, (height - top - 110) / racers.length));
+  const retained = new Set(drops.map((drop) => drop.txid));
+  for (const txid of positions.keys()) {
+    if (!retained.has(txid)) positions.delete(txid);
+  }
   racers.forEach((drop, index) => {
     const palette = feePalette(classifyFee(drop.feeRate, fees));
-    const progress = ((drop.x + (paused ? 0 : frame * drop.speed * 0.018)) % (width + 180)) - 90;
+    const label = `${shortTxid(drop.txid, width < 640 ? 8 : 12)}  ${drop.feeRate} sat/vB`;
     const y = top + index * laneHeight;
     context.strokeStyle = "rgba(80,255,145,.07)"; context.beginPath(); context.moveTo(0, y); context.lineTo(width, y); context.stroke();
     context.fillStyle = palette.dot; context.shadowBlur = palette.glow; context.shadowColor = palette.shadow; context.font = `${width < 640 ? 9 : 11}px ui-monospace,monospace`; context.textAlign = "left";
-    context.fillText(`${shortTxid(drop.txid, width < 640 ? 8 : 12)}  ${drop.feeRate} sat/vB`, progress, y - 4);
+    const current = positions.get(drop.txid) ?? drop.x;
+    const position = paused ? current : advanceRacePosition(current, drop.speed * 1.08, dt, width, context.measureText(label).width);
+    positions.set(drop.txid, position);
+    context.fillText(label, position, y - 4);
   });
   context.shadowBlur = 0;
   context.fillStyle = "rgba(220,255,232,.32)"; context.font = "9px ui-monospace,monospace"; context.textAlign = "right"; context.fillText("NEXT BLOCK →", width - 18, top - 20);
@@ -952,9 +1113,11 @@ function Metric({
     <div className="min-w-0">
       <div className="truncate font-mono text-[9px] uppercase tracking-[0.09em] text-emerald-300/60">{label}</div>
       <div className="mt-1.5 truncate font-mono text-[15px] font-semibold text-emerald-50 sm:text-base">{value}</div>
-      <div className="mt-2">
-        <Sparkline values={history ?? []} label={historyLabel ?? `${label} history`} />
-      </div>
+      {history && (
+        <div className="mt-2">
+          <Sparkline values={history} label={historyLabel ?? `${label} history`} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  advanceRacePosition,
   createDrop,
   mergeTransactions,
   nextDropLifecycle,
@@ -106,5 +107,22 @@ describe("matrix presentation", () => {
 
   it("shortens txids without losing both identity edges", () => {
     expect(shortTxid(tx.txid, 16)).toBe("b9c5d0bc…f19ab218");
+  });
+
+  it("advances race labels independently of frame rate", () => {
+    const atSixtyFps = Array.from({ length: 60 }).reduce<number>(
+      (position) => advanceRacePosition(position, 120, 1 / 60, 1_000, 140),
+      100,
+    );
+    const atTenFps = Array.from({ length: 10 }).reduce<number>(
+      (position) => advanceRacePosition(position, 120, 0.1, 1_000, 140),
+      100,
+    );
+    expect(atSixtyFps).toBeCloseTo(atTenFps);
+  });
+
+  it("wraps a race label beyond both offscreen boundaries", () => {
+    const position = advanceRacePosition(523, 20, 0.1, 500, 100);
+    expect(position).toBeLessThan(-100);
   });
 });

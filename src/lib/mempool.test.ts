@@ -49,27 +49,69 @@ describe("fetchMempoolSnapshot", () => {
 });
 
 describe("fetchTransactionDetail", () => {
-  it("loads and normalizes a transaction from the local explorer", async () => {
+  it("loads transaction anatomy, outspends and raw bytes from the local explorer", async () => {
     const txid = "a".repeat(64);
-    const fetcher = vi.fn(async () => ({
-      ok: true,
-      json: async () => ({
+    const previousTxid = "b".repeat(64);
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.endsWith("/outspends")) {
+        return {
+          ok: true,
+          json: async () => [{ spent: true, txid: "c".repeat(64), vin: 1, status: { confirmed: false } }],
+        };
+      }
+      if (url.endsWith("/hex")) {
+        return { ok: true, text: async () => "01000000" };
+      }
+      return {
+        ok: true,
+        json: async () => ({
         txid,
+        version: 2,
+        locktime: 958_000,
+        size: 110,
         fee: 400,
         weight: 400,
-        vin: [{ sequence: 0xfffffffd }],
-        vout: [{ value: 50_000 }],
+        vin: [{
+          txid: previousTxid,
+          vout: 0,
+          sequence: 0xfffffffd,
+          prevout: {
+            value: 50_400,
+            scriptpubkey: "0014abcd",
+            scriptpubkey_asm: "OP_0 OP_PUSHBYTES_20 abcd",
+            scriptpubkey_address: "bc1qexample",
+            scriptpubkey_type: "v0_p2wpkh",
+          },
+          scriptsig: "",
+          scriptsig_asm: "",
+          witness: ["signature", "public-key"],
+        }],
+        vout: [{
+          value: 50_000,
+          scriptpubkey: "5120abcd",
+          scriptpubkey_asm: "OP_PUSHNUM_1 OP_PUSHBYTES_32 abcd",
+          scriptpubkey_address: "bc1pexample",
+          scriptpubkey_type: "v1_p2tr",
+        }],
         status: { confirmed: false },
-      }),
-    })) as unknown as typeof fetch;
+        }),
+      };
+    }) as unknown as typeof fetch;
 
-    await expect(fetchTransactionDetail(fetcher, "http://mempool-web/api", txid)).resolves.toMatchObject({
+    const detail = await fetchTransactionDetail(fetcher, "http://mempool-web/api", txid);
+    expect(detail).toMatchObject({
       txid,
       feeRate: 4,
       rbf: true,
       inputs: 1,
       outputs: 1,
+      inputValue: 50_400,
+      outputValue: 50_000,
+      rawHex: "01000000",
     });
+    expect(detail.vin[0]).toMatchObject({ txid: previousTxid, sequenceType: "rbf" });
+    expect(detail.vout[0]).toMatchObject({ spend: { spent: true, vin: 1 } });
+    expect(fetcher).toHaveBeenCalledTimes(3);
   });
 
   it("rejects invalid txids before calling the node", async () => {

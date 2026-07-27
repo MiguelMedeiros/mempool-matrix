@@ -6,6 +6,11 @@ import {
   pruneHistory,
 } from "./history-store";
 import { fetchMempoolSnapshot } from "./mempool";
+import { safeSourceFetch } from "./source-fetch";
+import {
+  getActiveMempoolSource,
+  recordMempoolSourceHealth,
+} from "./runtime-config";
 
 type CollectorState = {
   collecting: boolean;
@@ -31,19 +36,33 @@ export function startHistoryCollector(): void {
 }
 
 async function collectHistory(state: CollectorState): Promise<void> {
-  if (state.collecting) return;
-  state.collecting = true;
-
-  try {
-    const source = process.env.MEMPOOL_API_URL ?? "http://127.0.0.1:3000/api";
-    const snapshot = await fetchMempoolSnapshot(fetch, source);
+  let source: Awaited<ReturnType<typeof getActiveMempoolSource>> | undefined;
+  await collectHistoryCycle(state, async () => {
+    source = await getActiveMempoolSource();
+    const snapshot = await fetchMempoolSnapshot(safeSourceFetch, source.baseUrl);
+    recordMempoolSourceHealth(source.baseUrl, true);
     await appendHistoryPoint(snapshotToHistoryPoint(snapshot));
     await pruneHistory(getHistoryRetentionDays());
-  } catch (error) {
+  }, (error) => {
+    if (source) recordMempoolSourceHealth(source.baseUrl, false, "unavailable");
     console.error(
       "[mempool-history] collection failed:",
       error instanceof Error ? error.message : error,
     );
+  });
+}
+
+export async function collectHistoryCycle(
+  state: { collecting: boolean },
+  operation: () => Promise<void>,
+  onError: (error: unknown) => void = () => undefined,
+): Promise<void> {
+  if (state.collecting) return;
+  state.collecting = true;
+  try {
+    await operation();
+  } catch (error) {
+    onError(error);
   } finally {
     state.collecting = false;
   }
