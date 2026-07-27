@@ -8,23 +8,37 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "audit:security": "node scripts/audit-dependencies.mjs"
   },
   "dependencies": {
-    "next": "16.2.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "next": "16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sharp": "0.35.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.1.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
     "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.10",
-    "tailwindcss": "^4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.12",
+    "postcss": "8.5.23",
+    "tailwindcss": "4.3.3",
     "typescript": "^5",
     "vitest": "^4.1.10"
+  },
+  "optionalDependencies": {
+    "@img/sharp-wasm32": "0.35.3",
+    "@napi-rs/wasm-runtime": "1.1.6"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "overrides": {
+    "postcss": "8.5.23",
+    "sharp": "0.35.3"
   }
 }
