@@ -40,6 +40,13 @@ docker compose up -d --build
 Do not commit `.env`. See [Configuration](configuration.md) for every variable
 and the source precedence model.
 
+`NEXT_PUBLIC_SITE_URL` is optional and is consumed while the image is built. Set
+it to the deployment's absolute HTTP(S) origin (without credentials) to emit
+Open Graph and Twitter image URLs, then rebuild the image. Leave it empty for a
+generic self-hosted image; social image metadata is intentionally omitted rather
+than pointing crawlers at localhost or another deployment. Changing it only in a
+running container does not update the statically built metadata.
+
 ## Persistence
 
 Compose bind-mounts `./data:/data`. The current container writes:

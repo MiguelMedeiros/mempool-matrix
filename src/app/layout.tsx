@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { buildSiteMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,19 +13,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "mempool.matrix — Bitcoin transaction rain",
-  description: "A live Matrix-inspired visualization of transactions entering our Bitcoin mempool.",
-  manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  appleWebApp: { capable: true, title: "mempool.matrix", statusBarStyle: "black-translucent" },
-};
+export const metadata: Metadata = buildSiteMetadata(process.env.NEXT_PUBLIC_SITE_URL);
 
-export const viewport = {
+export const viewport: Viewport = {
   themeColor: "#010302",
+  colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover" as const,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

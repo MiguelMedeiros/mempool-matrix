@@ -1,13 +1,30 @@
 {
-  "name": "mempool.matrix",
-  "short_name": "tx.matrix",
-  "description": "Live Bitcoin mempool transaction rain from our own node.",
+  "name": "mempool.matrix — Bitcoin Transaction Rain",
+  "short_name": "mempool.matrix",
+  "description": "An interactive visualization of Bitcoin mempool activity as transaction rain.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#010302",
-  "theme_color": "#07150f",
-  "orientation": "any",
+  "theme_color": "#010302",
+  "categories": ["bitcoin", "finance", "visualization"],
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

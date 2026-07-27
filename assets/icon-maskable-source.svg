@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">mempool.matrix maskable icon</title>
+  <desc id="desc">Bitcoin transaction rain flowing into a mempool horizon.</desc>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="38%" r="72%">
+      <stop offset="0" stop-color="#07150f"/>
+      <stop offset=".58" stop-color="#020a06"/>
+      <stop offset="1" stop-color="#010302"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#background)"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M152 122v39m0 24v30m0 24v15" stroke="#5bff9b" stroke-width="20" opacity=".38"/>
+    <path d="M256 104v34m0 24v46m0 24v54" stroke="#7dffad" stroke-width="22" opacity=".6"/>
+    <path d="M360 132v26m0 24v40m0 24v15" stroke="#5bff9b" stroke-width="20" opacity=".34"/>
+    <path d="M126 368c58-22 99-15 130 0s72 22 130 0" stroke="#43ff83" stroke-width="9" opacity=".28"/>
+  </g>
+  <rect x="128" y="266" width="48" height="48" rx="15" fill="#7dffad"/>
+  <rect x="229" y="298" width="54" height="54" rx="17" fill="#e7fff0"/>
+  <circle cx="360" cy="286" r="21" fill="#ffe871"/>
+  <path d="M142 290h20M242 325h28" stroke="#010302" stroke-width="9" stroke-linecap="round" opacity=".82"/>
+  <circle cx="360" cy="286" r="6" fill="#010302" opacity=".78"/>
+</svg>

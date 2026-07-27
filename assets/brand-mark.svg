@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">mempool.matrix transaction rain mark</title>
+  <desc id="desc">Three segmented transaction trails descend into a mempool horizon; one amber transaction adds fee-priority contrast.</desc>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="38%" r="72%">
+      <stop offset="0" stop-color="#07150f"/>
+      <stop offset=".58" stop-color="#020a06"/>
+      <stop offset="1" stop-color="#010302"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#background)"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M140 96v52m0 28v38m0 28v20" stroke="#5bff9b" stroke-width="24" opacity=".38"/>
+    <path d="M256 72v44m0 28v60m0 28v70" stroke="#7dffad" stroke-width="28" opacity=".6"/>
+    <path d="M372 108v34m0 28v52m0 28v20" stroke="#5bff9b" stroke-width="24" opacity=".34"/>
+    <path d="M108 397c67-27 113-18 148 0s81 27 148 0" stroke="#43ff83" stroke-width="10" opacity=".28"/>
+  </g>
+  <rect x="112" y="274" width="56" height="56" rx="18" fill="#7dffad"/>
+  <rect x="224" y="316" width="64" height="64" rx="20" fill="#e7fff0"/>
+  <circle cx="372" cy="298" r="24" fill="#ffe871"/>
+  <path d="M128 301h24M240 348h32" stroke="#010302" stroke-width="10" stroke-linecap="round" opacity=".82"/>
+  <circle cx="372" cy="298" r="7" fill="#010302" opacity=".78"/>
+</svg>

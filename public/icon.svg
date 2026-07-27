@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="108" fill="#010302"/>
-  <path d="M112 104v304M192 72v360M272 112v288M352 52v408M432 128v256" stroke="#43ff83" stroke-width="18" stroke-linecap="round" opacity=".35"/>
-  <text x="256" y="302" text-anchor="middle" font-family="monospace" font-size="168" font-weight="700" fill="#e8fff0">₿</text>
-</svg>

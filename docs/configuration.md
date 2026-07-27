@@ -22,6 +22,7 @@ place.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | unset | Optional public site origin used **at build time** for Open Graph and Twitter image URLs. Must be an absolute HTTP(S) URL without credentials. When unset, URL-dependent social metadata is omitted so generic self-hosted builds never advertise localhost or a wrong canonical origin. |
 | `MEMPOOL_API_URL` | `https://mempool.space/api` | Bootstrap mempool.space-compatible API URL. A runtime file takes precedence. |
 | `MEMPOOL_CONFIG_PATH` | `/data/runtime-config.json` | Runtime source configuration file. Its parent directory must be writable to save settings. |
 | `MEMPOOL_SETTINGS_TOKEN` | unset; empty in Compose | Token required for source tests and updates. If unset or empty, settings are read-only unless the development opt-in is enabled. |
