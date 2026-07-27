@@ -41,11 +41,14 @@ Do not commit `.env`. See [Configuration](configuration.md) for every variable
 and the source precedence model.
 
 `NEXT_PUBLIC_SITE_URL` is optional and is consumed while the image is built. Set
-it to the deployment's absolute HTTP(S) origin (without credentials) to emit
-Open Graph and Twitter image URLs, then rebuild the image. Leave it empty for a
-generic self-hosted image; social image metadata is intentionally omitted rather
-than pointing crawlers at localhost or another deployment. Changing it only in a
-running container does not update the statically built metadata.
+it to the deployment's publicly routable, root-only HTTP(S) origin (without
+credentials, query, or fragment) to emit Open Graph and Twitter image URLs, then
+rebuild the image. Localhost, single-label/local hostnames, and non-public IP
+literals are rejected. Private or local deployments should omit the variable
+rather than set it to an internal URL. Leave it empty for a generic self-hosted
+image; social image metadata is intentionally omitted rather than pointing
+crawlers at localhost or another deployment. Changing it only in a running
+container does not update the statically built metadata.
 
 ## Persistence
 
