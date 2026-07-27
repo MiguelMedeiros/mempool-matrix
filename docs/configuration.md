@@ -24,14 +24,14 @@ place.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | unset | Optional publicly routable site origin used **at build time** for Open Graph and Twitter image URLs. Must be an absolute root-only HTTP(S) origin without credentials, query, or fragment; localhost, single-label/local names, and non-public IP literals are rejected. When unset, URL-dependent social metadata is omitted so generic self-hosted builds never advertise localhost or a wrong canonical origin. Private/local deployments should omit this variable rather than set it to an internal URL. |
 | `MEMPOOL_API_URL` | `https://mempool.space/api` | Bootstrap mempool.space-compatible API URL. A runtime file takes precedence. |
-| `MEMPOOL_CONFIG_PATH` | `/data/runtime-config.json` | Runtime source configuration file. Its parent directory must be writable to save settings. |
+| `MEMPOOL_CONFIG_PATH` | `/data/runtime-config.json` | Runtime source configuration file. Its parent directory must be writable; stock Compose persists it in the `mempool-matrix-data` named volume, initialized writable by UID/GID 1000. |
 | `MEMPOOL_SETTINGS_TOKEN` | unset; empty in Compose | Token required for source tests and updates. If unset or empty, settings are read-only unless the development opt-in is enabled. |
 | `MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS` | unset / `false` in Compose | Exact value `true` enables unauthenticated source tests and updates. Trusted local development only. |
 | `MEMPOOL_TRUST_PROXY` | unset / `false` in Compose | Exact value `true` allows the settings probe limiter to use forwarding headers. Enable only behind a trusted proxy that overwrites them. |
 | `MEMPOOL_SOURCE_DENY_HOSTS` | unset | Comma-separated exact hostnames to reject as data sources, in addition to built-in metadata and link-local protections. |
 | `MEMPOOL_REQUEST_TIMEOUT_MS` | `8000` | Timeout for source requests in milliseconds. Positive values are capped at `60000`; invalid values use `8000`. |
 | `MEMPOOL_HISTORY_ENABLED` | enabled | Exact value `false` disables the background history collector. |
-| `MEMPOOL_HISTORY_DIR` | `/tmp/mempool-matrix-history` in code; `/data/mempool-history` in Compose | Directory for daily JSONL history files. |
+| `MEMPOOL_HISTORY_DIR` | `/tmp/mempool-matrix-history` in code; `/data/mempool-history` in Compose | Directory for daily JSONL history files. Stock Compose persists it in the `mempool-matrix-data` named volume. |
 | `MEMPOOL_HISTORY_INTERVAL_MS` | `60000` | Collection interval, clamped to `15000`–`3600000` milliseconds. |
 | `MEMPOOL_HISTORY_RETENTION_DAYS` | `30` | Retention, clamped to `1`–`365` days. |
 | `EXPLORER_PUBLIC_URL` | `https://mempool.space` | Base URL used by `/explorer/tx/:txid` redirects. Invalid or non-HTTP(S) values fall back to the default. |

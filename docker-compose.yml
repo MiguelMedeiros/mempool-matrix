@@ -1,12 +1,27 @@
 services:
   mempool-matrix:
+    image: ${MEMPOOL_MATRIX_IMAGE:-mempool-matrix:local}
     build:
       context: .
       args:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
-    container_name: mempool-matrix
+        OCI_SOURCE: ${OCI_SOURCE:-https://github.com/MiguelMedeiros/mempool-matrix}
+        OCI_REVISION: ${OCI_REVISION:-local}
+        OCI_VERSION: ${OCI_VERSION:-dev}
+        OCI_LICENSES: ${OCI_LICENSES:-MIT}
+    init: true
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,mode=1777
     restart: unless-stopped
     environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
       MEMPOOL_API_URL: ${MEMPOOL_API_URL:-https://mempool.space/api}
       MEMPOOL_CONFIG_PATH: /data/runtime-config.json
       MEMPOOL_SETTINGS_TOKEN: ${MEMPOOL_SETTINGS_TOKEN:-}
@@ -19,5 +34,18 @@ services:
     ports:
       - "${PORT:-3033}:3000"
     volumes:
-      - ./data:/data
+      - mempool-matrix-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>{if(!r.ok)throw Error(r.status)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     mem_limit: 512m
+
+volumes:
+  mempool-matrix-data:

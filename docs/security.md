@@ -97,11 +97,24 @@ request limits, and any desired authentication at the proxy.
 
 ## Container status
 
-No prebuilt image is documented. The current source-build Dockerfile runs the
-runtime stage as root because it has no `USER` instruction. Verify write access
-to `/data`, and do not grant the container privileged mode, host networking, the
-Docker socket, devices, or broad host mounts. Reassess ownership before changing
-the runtime user.
+No prebuilt image is documented. The source-build Dockerfile uses traced Next.js
+standalone output and runs as fixed UID/GID `1000:1000`. Its `/data` mount point
+is pre-owned by that identity so a fresh Compose named volume is writable without
+runtime initialization or a root chown helper. The application payload is limited
+to traced Next.js and public assets, while the pinned Node-on-Alpine base and its
+standard Alpine utilities remain. npm, npx, Corepack, and Yarn are unavailable
+in the merged runtime filesystem.
+
+Stock Compose drops all Linux capabilities, enables `no-new-privileges`, mounts
+the root filesystem read-only, and provides only `/tmp` as a restricted writable
+tmpfs in addition to persistent `/data`.
+
+Do not grant the container privileged mode, host networking, the Docker socket,
+devices, or broad host mounts. Treat the named volume as sensitive application
+data, back it up before upgrades, and do not use `docker compose down --volumes`
+unless deletion is intentional. A custom bind mount must be prepared so UID/GID
+1000 can write it; the stock Compose contract avoids that host-permission
+requirement.
 
 ## Reporting
 

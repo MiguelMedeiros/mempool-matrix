@@ -10,7 +10,8 @@
     "generate:assets": "node scripts/generate-assets.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "audit:security": "node scripts/audit-dependencies.mjs"
+    "audit:security": "node scripts/audit-dependencies.mjs",
+    "container:smoke": "sh scripts/smoke-container.sh"
   },
   "dependencies": {
     "next": "16.2.12",

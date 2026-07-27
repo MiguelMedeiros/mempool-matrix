@@ -58,8 +58,10 @@ Open <http://localhost:3033>. Check container health with:
 curl --fail http://localhost:3033/api/health
 ```
 
-Compose persists runtime configuration and history in `./data`.
-See [Docker deployment](docs/docker.md) before exposing the app to a network.
+Compose persists runtime configuration and history in the `mempool-matrix-data`
+named volume. The standalone runtime runs as UID/GID `1000:1000`.
+See [Docker deployment](docs/docker.md) for backup, restore, and migration steps
+before exposing or upgrading the app.
 
 > **Privacy:** the default source is `https://mempool.space/api`. Requests for
 > mempool and transaction data therefore reach that service. Point the app at
