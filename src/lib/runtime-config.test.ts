@@ -83,6 +83,33 @@ describe("runtime data-source configuration", () => {
     expect(await getPublicDataSourceStatus(false, configPath)).not.toHaveProperty("configuration");
   });
 
+  it("describes token and fail-safe read-only modes in public status", async () => {
+    const directory = await temporaryDirectory();
+    const configPath = path.join(directory, "runtime-config.json");
+    const previousToken = process.env.MEMPOOL_SETTINGS_TOKEN;
+    const previousOptIn = process.env.MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS;
+    try {
+      delete process.env.MEMPOOL_SETTINGS_TOKEN;
+      delete process.env.MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS;
+      await expect(getPublicDataSourceStatus(false, configPath)).resolves.toMatchObject({
+        canConfigure: false,
+        tokenRequired: false,
+        readOnly: true,
+      });
+      process.env.MEMPOOL_SETTINGS_TOKEN = "secret";
+      await expect(getPublicDataSourceStatus(false, configPath)).resolves.toMatchObject({
+        canConfigure: false,
+        tokenRequired: true,
+        readOnly: false,
+      });
+    } finally {
+      if (previousToken === undefined) delete process.env.MEMPOOL_SETTINGS_TOKEN;
+      else process.env.MEMPOOL_SETTINGS_TOKEN = previousToken;
+      if (previousOptIn === undefined) delete process.env.MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS;
+      else process.env.MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS = previousOptIn;
+    }
+  });
+
   it("reports the actual validated API path prefix", async () => {
     const directory = await temporaryDirectory();
     const configPath = path.join(directory, "runtime-config.json");

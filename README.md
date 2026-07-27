@@ -89,19 +89,26 @@ supported in this version.
 
 The connection-test rate limiter is bounded and process-local. Forwarding
 headers are ignored unless `MEMPOOL_TRUST_PROXY=true` is explicitly set behind
-a trusted reverse proxy; multi-instance deployments need an external shared
-limiter if a global limit is required.
+a trusted reverse proxy that overwrites client-supplied forwarding headers. Do
+not enable it when clients can reach the app directly. Multi-instance
+deployments need an external shared limiter if a global limit is required.
 
-When the app is reachable beyond a trusted network, set an administrative
-bearer token before starting Compose:
+Runtime settings are **read-only by default**. Set an administrative bearer
+token before starting Compose to enable connection tests and updates:
 
 ```bash
 MEMPOOL_SETTINGS_TOKEN="$(openssl rand -hex 32)" docker compose up -d --build
 ```
 
-The token protects connection tests and configuration updates. The browser
-keeps an entered token in `sessionStorage` only; the public settings status is
-redacted to a label, host, and `/api` path.
+Public `GET` status remains redacted. Use **Unlock settings** in the open sheet
+to fetch editable values without closing it. The token is never written to
+`localStorage` or logs; after a successful unlock it is kept only in memory and
+`sessionStorage` for the current browser session.
+
+For trusted local development only,
+`MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS=true` enables unauthenticated tests and
+updates. The value must be exactly `true`; exposing this mode to an untrusted
+network lets any client change the upstream data source.
 
 Historical metrics are sampled every 60 seconds and stored as daily JSONL files in the
 `./data` bind mount. The default retention is 30 days. Both values can be adjusted before

@@ -2,7 +2,20 @@ import { describe, expect, it } from "vitest";
 import {
   SourceValidationError,
   validateMempoolSource,
+  type SourceValidationErrorCode,
 } from "./source-validator";
+
+const unsafeSources: ReadonlyArray<readonly [string, SourceValidationErrorCode]> = [
+  ["file:///data/node", "unsupported-protocol"],
+  ["ftp://node.example/api", "unsupported-protocol"],
+  ["http://user:secret@node.example/api", "credentials-not-allowed"],
+  ["http://169.254.169.254/api", "metadata-endpoint"],
+  ["http://169.254.170.2/api", "metadata-endpoint"],
+  ["http://[fd00:ec2::254]/api", "metadata-endpoint"],
+  ["http://metadata.google.internal/api", "metadata-endpoint"],
+  ["http://node.example/rest", "must-end-with-api"],
+  ["http://node.example/api?token=secret", "invalid-url"],
+];
 
 describe("validateMempoolSource", () => {
   it("accepts and normalizes compatible local API URLs", () => {
@@ -18,17 +31,7 @@ describe("validateMempoolSource", () => {
     }).baseUrl).toBe("http://192.168.50.10:3000/api");
   });
 
-  it.each([
-    ["file:///data/node", "unsupported-protocol"],
-    ["ftp://node.example/api", "unsupported-protocol"],
-    ["http://user:secret@node.example/api", "credentials-not-allowed"],
-    ["http://169.254.169.254/api", "metadata-endpoint"],
-    ["http://169.254.170.2/api", "metadata-endpoint"],
-    ["http://[fd00:ec2::254]/api", "metadata-endpoint"],
-    ["http://metadata.google.internal/api", "metadata-endpoint"],
-    ["http://node.example/rest", "must-end-with-api"],
-    ["http://node.example/api?token=secret", "invalid-url"],
-  ])("rejects unsafe source %s", (baseUrl, code) => {
+  it.each(unsafeSources)("rejects unsafe source %s", (baseUrl, code) => {
     expect(() => validateMempoolSource({ baseUrl })).toThrowError(
       expect.objectContaining<Partial<SourceValidationError>>({ code }),
     );

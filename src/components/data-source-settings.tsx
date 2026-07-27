@@ -20,12 +20,14 @@ export function DataSourceSettings({
     setBaseUrl,
     setLabel,
     setToken,
+    unlockSettings,
     testSource,
     saveSource,
   } = controller;
 
   const busy = action !== "idle";
-  const saveEnabled = !busy && canSave(baseUrl, label);
+  const editable = Boolean(status?.canConfigure);
+  const saveEnabled = editable && !busy && canSave(baseUrl, label);
 
   return (
     <section className="mt-5 border-t border-emerald-300/10 pt-5" aria-labelledby="data-source-title">
@@ -52,6 +54,7 @@ export function DataSourceSettings({
         <input
           id="mempool-source-url"
           value={baseUrl}
+          disabled={!editable}
           onChange={(event) => setBaseUrl(event.target.value)}
           placeholder="http://mempool-web:8080/api"
           inputMode="url"
@@ -66,6 +69,7 @@ export function DataSourceSettings({
         <input
           id="mempool-source-label"
           value={label}
+          disabled={!editable}
           onChange={(event) => setLabel(event.target.value)}
           placeholder="local node"
           maxLength={64}
@@ -90,9 +94,25 @@ export function DataSourceSettings({
             <p className="font-mono text-[8px] uppercase tracking-[.1em] text-emerald-100/25">
               armazenado somente nesta sessão do navegador
             </p>
+            {!status.canConfigure && (
+              <button
+                type="button"
+                disabled={loading || !token}
+                onClick={() => void unlockSettings()}
+                className="min-h-11 rounded-xl border border-emerald-200/40 bg-emerald-300/15 px-3 font-mono text-[9px] uppercase tracking-[.12em] text-white disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                {loading ? "desbloqueando…" : "desbloquear configurações"}
+              </button>
+            )}
           </>
         )}
       </div>
+
+      {status?.readOnly && (
+        <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/5 px-3 py-2.5 font-mono text-[9px] leading-relaxed text-amber-100/75">
+          Somente leitura. Configure MEMPOOL_SETTINGS_TOKEN ou, apenas em desenvolvimento confiável, MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS=true.
+        </p>
+      )}
 
       {probe && (
         <div className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-300/5 px-3 py-2.5 font-mono text-[9px] text-emerald-100/70">
@@ -100,7 +120,7 @@ export function DataSourceSettings({
         </div>
       )}
       {error && (
-        <div className="mt-3 rounded-xl border border-rose-300/20 bg-rose-300/5 px-3 py-2.5 font-mono text-[9px] text-rose-100/75">
+        <div role="alert" className="mt-3 rounded-xl border border-rose-300/20 bg-rose-300/5 px-3 py-2.5 font-mono text-[9px] text-rose-100/75">
           {error}
         </div>
       )}
@@ -108,7 +128,7 @@ export function DataSourceSettings({
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button
           type="button"
-          disabled={busy || !baseUrl.trim() || (Boolean(status?.tokenRequired) && !token)}
+          disabled={!editable || busy || !baseUrl.trim()}
           onClick={() => void testSource(baseUrl, label)}
           className="min-h-11 rounded-xl border border-emerald-300/20 bg-black/35 px-3 font-mono text-[9px] uppercase tracking-[.12em] text-emerald-100/65 disabled:cursor-not-allowed disabled:opacity-35"
         >

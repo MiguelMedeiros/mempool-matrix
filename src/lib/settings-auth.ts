@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 6;
@@ -13,19 +13,26 @@ const authGlobal = globalThis as typeof globalThis & {
   __mempoolMatrixSettingsRateLimits?: Map<string, RateEntry>;
 };
 
-export function isSettingsRequestAuthorized(request: Request): boolean {
+export type SettingsAccess = "authorized" | "unauthorized" | "read-only";
+
+export function getSettingsAccess(request: Request): SettingsAccess {
   const expected = process.env.MEMPOOL_SETTINGS_TOKEN;
-  if (!expected) return true;
+  if (!expected) {
+    return process.env.MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS === "true"
+      ? "authorized"
+      : "read-only";
+  }
 
   const authorization = request.headers.get("authorization");
-  if (!authorization?.startsWith("Bearer ")) return false;
+  if (!authorization?.startsWith("Bearer ")) return "unauthorized";
   const received = authorization.slice("Bearer ".length);
-  const expectedBytes = Buffer.from(expected);
-  const receivedBytes = Buffer.from(received);
-  return (
-    expectedBytes.length === receivedBytes.length
-    && timingSafeEqual(expectedBytes, receivedBytes)
-  );
+  const expectedDigest = createHash("sha256").update(expected).digest();
+  const receivedDigest = createHash("sha256").update(received).digest();
+  return timingSafeEqual(expectedDigest, receivedDigest) ? "authorized" : "unauthorized";
+}
+
+export function isSettingsRequestAuthorized(request: Request): boolean {
+  return getSettingsAccess(request) === "authorized";
 }
 
 export function isSettingsTestRateLimited(

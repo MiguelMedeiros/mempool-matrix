@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { DataSourceSettings } from "@/components/data-source-settings";
 import { Sparkline } from "@/components/sparkline";
 import { useDataSourceSettings } from "@/hooks/use-data-source-settings";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { useMempoolHistory } from "@/hooks/use-mempool-history";
 import {
   blockAnimationProgress,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/fee-spectrum";
 import { transactionRates } from "@/lib/history";
 import type { MempoolSnapshot } from "@/lib/mempool";
+import { resolveInitialDialog } from "@/lib/settings-ui";
 import {
   advanceRacePosition,
   createDrop,
@@ -106,6 +108,10 @@ export function MempoolMatrix() {
   const easterTimerRef = useRef<number | null>(null);
   const longPressRef = useRef<number | null>(null);
   const titleTapsRef = useRef<number[]>([]);
+  const searchInitialFocusRef = useRef<HTMLInputElement>(null);
+  const settingsInitialFocusRef = useRef<HTMLButtonElement>(null);
+  const searchDialogRef = useRef<HTMLFormElement>(null);
+  const settingsDialogRef = useRef<HTMLDivElement>(null);
 
   const [snapshot, setSnapshot] = useState(EMPTY);
   const [selected, setSelected] = useState<MempoolTransaction | null>(null);
@@ -124,6 +130,20 @@ export function MempoolMatrix() {
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "invalid" | "not-found">("idle");
   const dataSourceSettings = useDataSourceSettings();
   const { points: historyPoints } = useMempoolHistory("1h", 60);
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  useDialogFocus(
+    searchOpen,
+    closeSearch,
+    searchDialogRef,
+    searchInitialFocusRef,
+  );
+  useDialogFocus(
+    settingsOpen,
+    closeSettings,
+    settingsDialogRef,
+    settingsInitialFocusRef,
+  );
 
   const tone = useCallback((frequency: number, duration = 0.12, volume = 0.025) => {
     const audio = audioRef.current;
@@ -232,8 +252,9 @@ export function MempoolMatrix() {
       modeStorageReadyRef.current = true;
       setMode(restoredMode);
       const params = new URLSearchParams(window.location.search);
-      if (params.get("search") === "1") setSearchOpen(true);
-      if (params.get("settings") === "1") setSettingsOpen(true);
+      const initialDialog = resolveInitialDialog(params);
+      setSearchOpen(initialDialog === "search");
+      setSettingsOpen(initialDialog === "settings");
       const egg = params.get("egg");
       if (egg && egg in EASTER_COPY) triggerEaster(egg as EasterKind);
     }, 0);
@@ -344,8 +365,15 @@ export function MempoolMatrix() {
   };
 
   const openSettings = () => {
+    setSearchOpen(false);
     setSettingsOpen(true);
     void dataSourceSettings.refresh();
+  };
+
+  const openSearch = () => {
+    setSettingsOpen(false);
+    setSearchOpen(true);
+    setSearchStatus("idle");
   };
 
   const toggleAudio = async () => {
@@ -517,16 +545,25 @@ export function MempoolMatrix() {
 
       {searchOpen && (
         <div className="tx-search-overlay bg-black/60 backdrop-blur-sm">
-          <form onSubmit={searchTransaction} className="tx-search-sheet border border-emerald-300/20 bg-[#021009]/98 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
+          <form
+            id="transaction-search-dialog"
+            ref={searchDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transaction-search-dialog-title"
+            onSubmit={searchTransaction}
+            className="tx-search-sheet border border-emerald-300/20 bg-[#021009]/98 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5"
+          >
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-mono text-[11px] uppercase tracking-[.18em] text-emerald-300/70">transaction search</div>
+                <div id="transaction-search-dialog-title" className="font-mono text-[11px] uppercase tracking-[.18em] text-emerald-300/70">transaction search</div>
                 <div className="mt-1.5 text-base leading-snug text-emerald-50/85">Cole um TXID ou uma URL do explorador.</div>
               </div>
               <button type="button" onClick={() => setSearchOpen(false)} className="shrink-0 rounded-full border border-emerald-300/15 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[.12em] text-emerald-100/55">close</button>
             </div>
             <div className="mt-4 flex flex-wrap gap-2 sm:flex-nowrap">
               <input
+                ref={searchInitialFocusRef}
                 value={searchQuery}
                 onChange={(event) => { setSearchQuery(event.target.value); setSearchStatus("idle"); }}
                 placeholder="TXID ou URL do explorador"
@@ -545,13 +582,20 @@ export function MempoolMatrix() {
 
       {settingsOpen && (
         <div className="tx-search-overlay bg-black/60 backdrop-blur-sm">
-          <div className="tx-search-sheet border border-emerald-300/20 bg-[#021009]/98 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5">
+          <div
+            id="settings-dialog"
+            ref={settingsDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-dialog-title"
+            className="tx-search-sheet border border-emerald-300/20 bg-[#021009]/98 p-4 shadow-[0_0_80px_rgba(40,255,120,.12)] sm:p-5"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="font-mono text-[11px] uppercase tracking-[.18em] text-emerald-300/70">configurações</div>
+                <div id="settings-dialog-title" className="font-mono text-[11px] uppercase tracking-[.18em] text-emerald-300/70">configurações</div>
                 <div className="mt-1.5 text-base text-emerald-50/85">Visual, áudio e fonte de dados.</div>
               </div>
-              <button type="button" onClick={() => setSettingsOpen(false)} className="shrink-0 rounded-full border border-emerald-300/15 px-3 py-2 font-mono text-[10px] uppercase text-emerald-100/65">fechar</button>
+              <button ref={settingsInitialFocusRef} type="button" onClick={() => setSettingsOpen(false)} className="shrink-0 rounded-full border border-emerald-300/15 px-3 py-2 font-mono text-[10px] uppercase text-emerald-100/65">fechar</button>
             </div>
             <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {MODES.map((item) => (
@@ -600,8 +644,8 @@ export function MempoolMatrix() {
               </div>
             </div>
             <div className="pointer-events-auto hidden gap-2 sm:flex">
-              <ControlButton label="search tx" onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
-              <ControlButton label="settings" onClick={openSettings} />
+              <ControlButton label="search tx" controls="transaction-search-dialog" expanded={searchOpen} onClick={openSearch} />
+              <ControlButton label="settings" controls="settings-dialog" expanded={settingsOpen} onClick={openSettings} />
               <ControlButton label={paused ? "resume" : "pause"} onClick={() => setPaused((value) => !value)} />
               <ControlButton label="fullscreen" onClick={toggleFullscreen} />
             </div>
@@ -611,8 +655,8 @@ export function MempoolMatrix() {
             className="pointer-events-auto z-50 grid grid-cols-2 gap-2 sm:hidden"
             style={{ position: "fixed", left: "min(calc(100vw - 108px), 282px)", top: 12, width: 96 }}
           >
-            <ControlButton label="search tx" mobileLabel={<SearchIcon />} onClick={() => { setSearchOpen(true); setSearchStatus("idle"); }} />
-            <ControlButton label="settings" mobileLabel={<SettingsIcon />} onClick={openSettings} />
+            <ControlButton label="search tx" mobileLabel={<SearchIcon />} controls="transaction-search-dialog" expanded={searchOpen} onClick={openSearch} />
+            <ControlButton label="settings" mobileLabel={<SettingsIcon />} controls="settings-dialog" expanded={settingsOpen} onClick={openSettings} />
             <ControlButton label={paused ? "resume" : "pause"} mobileLabel={paused ? "▶" : "Ⅱ"} onClick={() => setPaused((value) => !value)} />
             <ControlButton label="fullscreen" mobileLabel="⛶" onClick={toggleFullscreen} />
           </div>
@@ -1094,8 +1138,22 @@ function SettingsIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" /></svg>;
 }
 
-function ControlButton({ label, mobileLabel, onClick, active = false }: { label: string; mobileLabel?: ReactNode; onClick: () => void; active?: boolean }) {
-  return <button aria-label={label} onClick={onClick} className={`min-h-11 min-w-11 rounded-full border px-3 py-2 font-mono text-base uppercase leading-none tracking-[.1em] backdrop-blur-md transition sm:min-h-0 sm:min-w-9 sm:text-[9px] sm:tracking-[.16em] ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
+function ControlButton({
+  label,
+  mobileLabel,
+  onClick,
+  active = false,
+  controls,
+  expanded,
+}: {
+  label: string;
+  mobileLabel?: ReactNode;
+  onClick: () => void;
+  active?: boolean;
+  controls?: string;
+  expanded?: boolean;
+}) {
+  return <button aria-label={label} aria-controls={controls} aria-expanded={expanded} onClick={onClick} className={`min-h-11 min-w-11 rounded-full border px-3 py-2 font-mono text-base uppercase leading-none tracking-[.1em] backdrop-blur-md transition sm:min-h-0 sm:min-w-9 sm:text-[9px] sm:tracking-[.16em] ${active ? "border-emerald-200/50 bg-emerald-300/15 text-white" : "border-emerald-300/15 bg-black/35 text-emerald-200/65 hover:border-emerald-300/40"}`}><span className="sm:hidden">{mobileLabel ?? label}</span><span className="hidden sm:inline">{label}</span></button>;
 }
 
 function Metric({

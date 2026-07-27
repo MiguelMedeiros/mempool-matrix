@@ -22,12 +22,16 @@ const payloads: Record<string, unknown> = {
 
 describe("probeMempoolSource", () => {
   it("checks the required API surface with redirects disabled", async () => {
-    const fetcher = vi.fn(async (input: string | URL | Request) => ({
+    const fetchMock = vi.fn<(
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => Promise<{ ok: boolean; json: () => Promise<unknown>; redirected: boolean; status: number }>>(async (input) => ({
       ok: true,
       json: async () => payloads[new URL(String(input)).pathname],
       redirected: false,
       status: 200,
-    })) as unknown as typeof fetch;
+    }));
+    const fetcher = fetchMock as unknown as typeof fetch;
 
     await expect(probeMempoolSource(fetcher, {
       baseUrl: "http://node.internal/api",
@@ -46,7 +50,7 @@ describe("probeMempoolSource", () => {
       },
     });
     expect(fetcher).toHaveBeenCalledTimes(4);
-    expect(fetcher.mock.calls.every((call) => call[1]?.redirect === "manual")).toBe(true);
+    expect(fetchMock.mock.calls.every((call) => call[1]?.redirect === "manual")).toBe(true);
   });
 
   it("rejects redirects instead of following them", async () => {

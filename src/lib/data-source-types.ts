@@ -11,6 +11,7 @@ export type DataSourceStatus = {
   lastCheckedAt: string | null;
   lastError: string | null;
   tokenRequired: boolean;
+  readOnly: boolean;
   canConfigure: boolean;
   configuration?: {
     baseUrl: string;

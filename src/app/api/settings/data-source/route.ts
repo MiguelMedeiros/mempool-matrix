@@ -1,7 +1,7 @@
 import { getPublicDataSourceStatus, recordMempoolSourceHealth, saveRuntimeConfig } from "@/lib/runtime-config";
 import { probeMempoolSource } from "@/lib/mempool-probe";
 import { readLimitedJsonObject } from "@/lib/request-body";
-import { isSettingsRequestAuthorized, settingsTestRateLimitResponse } from "@/lib/settings-auth";
+import { getSettingsAccess, settingsTestRateLimitResponse, type SettingsAccess } from "@/lib/settings-auth";
 import { safeSourceFetch } from "@/lib/source-fetch";
 import { SourceValidationError, validateMempoolSource, type ValidatedMempoolSource } from "@/lib/source-validator";
 
@@ -11,7 +11,7 @@ const JSON_HEADERS = { "Cache-Control": "no-store, max-age=0" };
 const MAX_BODY_BYTES = 4_096;
 
 type Dependencies = {
-  authorized: (request: Request) => boolean;
+  access: (request: Request) => SettingsAccess;
   rateLimit: (request: Request) => Response | null;
   status: (canConfigure: boolean) => Promise<unknown>;
   validate: (body: Record<string, unknown>) => ValidatedMempoolSource;
@@ -21,7 +21,7 @@ type Dependencies = {
 };
 
 const dependencies: Dependencies = {
-  authorized: isSettingsRequestAuthorized,
+  access: getSettingsAccess,
   rateLimit: settingsTestRateLimitResponse,
   status: getPublicDataSourceStatus,
   validate: (body) => validateMempoolSource({ baseUrl: body.baseUrl, label: body.label }),
@@ -33,7 +33,7 @@ const dependencies: Dependencies = {
 export function createDataSourceRouteHandlers(deps: Dependencies) {
   return {
     async GET(request: Request) {
-      const canConfigure = deps.authorized(request);
+      const canConfigure = deps.access(request) === "authorized";
       try {
         return Response.json(await deps.status(canConfigure), { headers: JSON_HEADERS });
       } catch {
@@ -41,7 +41,15 @@ export function createDataSourceRouteHandlers(deps: Dependencies) {
       }
     },
     async PUT(request: Request) {
-      if (!deps.authorized(request)) return jsonError(401, "unauthorized", "Administrative token required.");
+      const access = deps.access(request);
+      if (access === "read-only") {
+        return jsonError(
+          403,
+          "settings-read-only",
+          "Settings are read-only. Configure MEMPOOL_SETTINGS_TOKEN or explicitly enable trusted development access.",
+        );
+      }
+      if (access === "unauthorized") return jsonError(401, "unauthorized", "Administrative token required.");
       // Authenticate first so unauthorized clients cannot consume the shared quota;
       // rate-limit before body parsing and the expensive source probe.
       const rateLimitResponse = deps.rateLimit(request);

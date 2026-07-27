@@ -23,6 +23,8 @@ describe("Docker Compose portability contract", () => {
     const config = resolvedComposeConfig();
 
     expect(config).toContain("MEMPOOL_API_URL: https://mempool.space/api");
+    expect(config).toContain('MEMPOOL_TRUST_PROXY: "false"');
+    expect(config).toContain('MEMPOOL_SOURCE_DENY_HOSTS: ""');
     expect(config).toMatch(/build:\n\s+context: .+/);
     expect(config).not.toContain("network: host");
     expect(config).not.toContain(privateNetwork);

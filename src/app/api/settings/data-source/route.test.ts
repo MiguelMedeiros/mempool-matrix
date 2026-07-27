@@ -4,7 +4,7 @@ import { createDataSourceRouteHandlers } from "./route";
 
 function dependencies(overrides: Record<string, unknown> = {}) {
   return {
-    authorized: () => true,
+    access: () => "authorized" as const,
     rateLimit: settingsTestRateLimitResponse,
     status: vi.fn(async () => ({ type: "mempool-api", canConfigure: true })),
     validate: vi.fn((body: Record<string, unknown>) => ({ baseUrl: String(body.baseUrl), label: body.label as string | undefined })),
@@ -25,11 +25,40 @@ afterEach(() => {
 describe("data source settings route", () => {
   it("rejects unauthorized writes before reading the body or consuming rate-limit quota", async () => {
     const rateLimit = vi.fn(() => null);
-    const deps = dependencies({ authorized: () => false, rateLimit });
+    const deps = dependencies({ access: () => "unauthorized" as const, rateLimit });
     const response = await createDataSourceRouteHandlers(deps).PUT(put("not-json"));
     expect(response.status).toBe(401);
     expect(rateLimit).not.toHaveBeenCalled();
     expect(deps.validate).not.toHaveBeenCalled();
+  });
+
+  it("returns actionable read-only status before rate limiting or reading the body", async () => {
+    const rateLimit = vi.fn(() => null);
+    const deps = dependencies({ access: () => "read-only" as const, rateLimit });
+    const response = await createDataSourceRouteHandlers(deps).PUT(put("not-json"));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: "settings-read-only",
+      message: "Settings are read-only. Configure MEMPOOL_SETTINGS_TOKEN or explicitly enable trusted development access.",
+    });
+    expect(rateLimit).not.toHaveBeenCalled();
+    expect(deps.validate).not.toHaveBeenCalled();
+    expect(deps.probe).not.toHaveBeenCalled();
+  });
+
+  it("serves redacted public status and editable authenticated status", async () => {
+    const status = vi.fn(async (canConfigure: boolean) => ({ canConfigure }));
+    const publicDeps = dependencies({ access: () => "unauthorized" as const, status });
+    await expect((await createDataSourceRouteHandlers(publicDeps).GET(new Request("http://local"))).json())
+      .resolves.toEqual({ canConfigure: false });
+    expect(status).toHaveBeenLastCalledWith(false);
+
+    const editableDeps = dependencies({ access: () => "authorized" as const, status });
+    await expect((await createDataSourceRouteHandlers(editableDeps).GET(new Request("http://local"))).json())
+      .resolves.toEqual({ canConfigure: true });
+    expect(status).toHaveBeenLastCalledWith(true);
   });
 
   it("rate limits repeated writes before running the blocked probe", async () => {

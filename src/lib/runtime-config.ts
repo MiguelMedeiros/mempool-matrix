@@ -126,6 +126,8 @@ export async function getPublicDataSourceStatus(
     lastCheckedAt: matchingHealth?.checkedAt ?? null,
     lastError: matchingHealth?.error ?? null,
     tokenRequired: Boolean(process.env.MEMPOOL_SETTINGS_TOKEN),
+    readOnly: !process.env.MEMPOOL_SETTINGS_TOKEN
+      && process.env.MEMPOOL_ALLOW_UNAUTHENTICATED_SETTINGS !== "true",
     canConfigure,
     ...(canConfigure ? {
       configuration: {
