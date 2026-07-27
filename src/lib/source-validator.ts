@@ -6,6 +6,7 @@ export const MAX_SOURCE_LABEL_LENGTH = 64;
 const BLOCKED_HOSTNAMES = new Set([
   "169.254.169.254",
   "169.254.170.2",
+  // Tailscale's fixed local API/metadata address is a deliberate security denylist entry.
   "100.100.100.200",
   "[::ffff:169.254.169.254]",
   "[fd00:ec2::254]",

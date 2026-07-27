@@ -67,7 +67,7 @@ export function DataSourceSettings({
           id="mempool-source-label"
           value={label}
           onChange={(event) => setLabel(event.target.value)}
-          placeholder="zero node"
+          placeholder="local node"
           maxLength={64}
           className="min-h-11 w-full rounded-xl border border-emerald-300/15 bg-black/60 px-3 font-mono text-xs text-emerald-50 outline-none placeholder:text-emerald-100/20 focus:border-emerald-300/45"
         />

@@ -100,7 +100,7 @@ describe("transaction inspector and modes", () => {
   it("extracts a txid from raw text or a local explorer URL", () => {
     const txid = "ab".repeat(32);
     expect(parseTransactionSearch(`  ${txid.toUpperCase()}  `)).toBe(txid);
-    expect(parseTransactionSearch(`http://100.67.121.90:3000/tx/${txid}?source=live`)).toBe(txid);
+    expect(parseTransactionSearch(`http://192.0.2.10:3000/tx/${txid}?source=live`)).toBe(txid);
     expect(parseTransactionSearch("not a transaction")).toBeNull();
   });
 

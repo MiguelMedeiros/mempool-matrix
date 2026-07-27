@@ -5,17 +5,17 @@ import {
 } from "./source-validator";
 
 describe("validateMempoolSource", () => {
-  it("accepts and normalizes compatible private API URLs", () => {
+  it("accepts and normalizes compatible local API URLs", () => {
     expect(validateMempoolSource({
       baseUrl: " http://mempool-web:8080/api/ ",
-      label: " zero node ",
+      label: " local node ",
     })).toEqual({
       baseUrl: "http://mempool-web:8080/api",
-      label: "zero node",
+      label: "local node",
     });
     expect(validateMempoolSource({
-      baseUrl: "http://100.67.121.90:3000",
-    }).baseUrl).toBe("http://100.67.121.90:3000/api");
+      baseUrl: "http://192.168.50.10:3000",
+    }).baseUrl).toBe("http://192.168.50.10:3000/api");
   });
 
   it.each([

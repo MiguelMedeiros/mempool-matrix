@@ -1,6 +1,6 @@
 # mempool.matrix
 
-A private, live visualization of Bitcoin mempool activity inspired by digital rain. Transaction IDs fall through a responsive canvas; brightness and speed encode fee rate, while a compact HUD shows the state of the mempool backed by our own Bitcoin node.
+A live visualization of Bitcoin mempool activity inspired by digital rain. Transaction IDs fall through a responsive canvas; brightness and speed encode fee rate, while a compact HUD shows the state of the configured mempool.space-compatible source.
 
 ## Features
 
@@ -21,14 +21,16 @@ A private, live visualization of Bitcoin mempool activity inspired by digital ra
 - Responsive canvas and safe-area-aware mobile interface
 - Adaptive rendering budget: stable 48-drop mobile pool, reduced mobile DPR, and zero per-glyph glow in the normal mobile rain
 - Matrix easter eggs tied to real activity: White Rabbit, Wake Up Satoshi, Red/Blue Pill, Kung Fu priority, RBF Déjà Vu, Spoon bending, Knock Knock blocks, fee Agents, hidden names, and Zion mode
-- Node-backed data via the local mempool.space stack on `zero`
-- Private Tailscale deployment
+- Public mempool.space data by default, with support for compatible local nodes
+- Portable Docker Compose deployment
 
 ## Local development
 
+Node.js and npm are required for local development.
+
 ```bash
 npm ci
-MEMPOOL_API_URL=http://100.67.121.90:3000/api npm run dev
+npm run dev
 ```
 
 Open `http://localhost:3000`.
@@ -39,6 +41,10 @@ ends in `/api`.
 
 ## Tests and quality gates
 
+The full test suite also requires Git and Docker Compose. These contribution and
+testing notes are provisional; the final contributor documentation will arrive
+in Task 7.
+
 ```bash
 npm test
 npm run test:coverage
@@ -46,15 +52,24 @@ npm run lint
 npm run build
 ```
 
-## Docker deployment on zero
+## Docker deployment
 
-The Compose service joins `bitcoin-docker_default` and reads from `http://mempool-web/api`, which is backed by the Bitcoin node running on `zero`.
+The included Compose configuration uses `https://mempool.space/api` by default,
+so it does not require a pre-existing Docker network or local mempool service.
 
 ```bash
 docker compose up -d --build
 ```
 
-By default it publishes port `3033` on `zero`; the host's containerized Tailscale endpoint makes it reachable privately at the zero Tailscale address.
+By default it publishes port `3033`; open `http://localhost:3033`.
+To use a compatible local API instead, override the source when starting it:
+
+```bash
+MEMPOOL_API_URL=http://192.168.1.10:8080/api docker compose up -d --build
+```
+
+The endpoint must be reachable from the container and its path must end in
+`/api`.
 
 ### Runtime data-source settings
 
@@ -77,8 +92,8 @@ headers are ignored unless `MEMPOOL_TRUST_PROXY=true` is explicitly set behind
 a trusted reverse proxy; multi-instance deployments need an external shared
 limiter if a global limit is required.
 
-When the app is reachable beyond a trusted Tailscale network, set an
-administrative bearer token before starting Compose:
+When the app is reachable beyond a trusted network, set an administrative
+bearer token before starting Compose:
 
 ```bash
 MEMPOOL_SETTINGS_TOKEN="$(openssl rand -hex 32)" docker compose up -d --build

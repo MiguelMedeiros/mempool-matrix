@@ -17,7 +17,7 @@ describe("resolved source address policy", () => {
     }])).toThrowError(expect.objectContaining({ code: "metadata-endpoint" }));
   });
 
-  it.each(["10.0.0.2", "172.20.0.3", "192.168.1.4", "100.67.121.90", "fd12::10"])(
+  it.each(["10.0.0.2", "172.20.0.3", "192.168.1.4", "100.64.0.10", "fd12::10"])(
     "allows deliberate local node address %s",
     (address) => expect(() => assertSafeResolvedAddresses([{
       address,

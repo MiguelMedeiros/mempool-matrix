@@ -2,11 +2,10 @@ services:
   mempool-matrix:
     build:
       context: .
-      network: host
     container_name: mempool-matrix
     restart: unless-stopped
     environment:
-      MEMPOOL_API_URL: http://mempool-web:8080/api
+      MEMPOOL_API_URL: ${MEMPOOL_API_URL:-https://mempool.space/api}
       MEMPOOL_CONFIG_PATH: /data/runtime-config.json
       MEMPOOL_SETTINGS_TOKEN: ${MEMPOOL_SETTINGS_TOKEN:-}
       MEMPOOL_HISTORY_DIR: /data/mempool-history
@@ -17,10 +16,3 @@ services:
     volumes:
       - ./data:/data
     mem_limit: 512m
-    networks:
-      - bitcoin
-
-networks:
-  bitcoin:
-    external: true
-    name: bitcoin-docker_default
