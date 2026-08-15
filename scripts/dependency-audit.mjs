@@ -5,8 +5,10 @@ const ALLOWED_ADVISORY_RANGE = "<=5.0.7";
 const ALLOWED_PACKAGE = "brace-expansion";
 const ALLOWED_BRACE_EXPANSION_VERSIONS = new Set([
   "1.1.16",
+  "1.1.18",
   "2.1.2",
   "5.0.8",
+  "5.0.9",
 ]);
 const SEVERITIES = ["info", "low", "moderate", "high", "critical"];
 

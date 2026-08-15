@@ -84,6 +84,14 @@ const allowedLock = {
   },
 };
 
+const fixedLock = {
+  packages: {
+    "": { name: "fixture" },
+    "node_modules/brace-expansion": { version: "5.0.9" },
+    "node_modules/eslint/node_modules/brace-expansion": { version: "1.1.18" },
+  },
+};
+
 function evaluate(full: unknown, production: unknown = cleanAudit, lock: unknown = allowedLock) {
   return evaluateDependencyAudits(full, production, lock);
 }
@@ -173,6 +181,16 @@ describe("dependency audit gate", () => {
       ok: true,
       actionableHighCritical: 0,
       allowlistedFalsePositives: 0,
+    });
+  });
+
+  it("passes clean audits with patched brace-expansion versions", () => {
+    const result = evaluate(cleanAudit, cleanAudit, fixedLock);
+
+    expect(result).toMatchObject({
+      ok: true,
+      actionableHighCritical: 0,
+      braceExpansionVersions: ["1.1.18", "5.0.9"],
     });
   });
 
