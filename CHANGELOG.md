@@ -4,6 +4,15 @@ All notable changes to Mempool Matrix will be documented in this file.
 
 ## Unreleased
 
+## [1.0.1] - 2026-08-15
+
+### Security
+
+- Updated `js-yaml` to 4.3.1 to remediate quadratic CPU consumption in
+  `!!omap` resolution.
+- Updated transitive `brace-expansion` and `nanoid` releases to close denial-of-
+  service advisories while keeping full and production dependency audits clean.
+
 ## [1.0.0] - 2026-07-27
 
 ### Added

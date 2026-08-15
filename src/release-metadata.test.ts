@@ -18,11 +18,11 @@ const dockerGuide = read("docs/docker.md");
 const releaseGuide = read("docs/releasing.md");
 const containerWorkflow = read(".github/workflows/container.yml");
 
-const releaseVersion = "1.0.0";
-const releaseTag = `v${releaseVersion}`;
+const releaseVersion = "1.0.1";
+const baselineReleaseTag = "v1.0.0";
 const nodeBaseline = ">=22.22.0";
 
-describe("public 1.0.0 release metadata contract", () => {
+describe("public release metadata contract", () => {
   it("aligns application and lockfile metadata without enabling npm publication", () => {
     expect(packageJson.version).toBe(releaseVersion);
     expect(packageLock.version).toBe(releaseVersion);
@@ -32,8 +32,12 @@ describe("public 1.0.0 release metadata contract", () => {
     expect(packageLock.packages[""].engines.node).toBe(nodeBaseline);
   });
 
-  it("closes the public changelog on the release date without private-release history", () => {
-    expect(changelog).toContain(`## [${releaseVersion}] - 2026-07-27`);
+  it("records the current security patch and preserves the public baseline", () => {
+    expect(changelog).toContain(`## [${releaseVersion}] - 2026-08-15`);
+    expect(changelog).toMatch(/js-yaml/i);
+    expect(changelog).toMatch(/brace-expansion/i);
+    expect(changelog).toMatch(/nanoid/i);
+    expect(changelog).toContain("## [1.0.0] - 2026-07-27");
     expect(changelog).toMatch(/visualiz|visual experience/i);
     expect(changelog).toMatch(/SSRF/i);
     expect(changelog).toMatch(/history|historical/i);
@@ -60,7 +64,7 @@ describe("public 1.0.0 release metadata contract", () => {
     for (const gate of [
       "explicit approval",
       "repository visibility",
-      releaseTag,
+      baselineReleaseTag,
       "workflow",
       "digest",
       "SBOM",
