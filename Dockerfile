@@ -36,9 +36,11 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
-# The traced server needs Node, not npm or Corepack. The pre-owned mount point
-# also lets Docker initialize a fresh named volume with UID/GID 1000.
-RUN rm -rf \
+# Patch runtime TLS libraries from the pinned Alpine line before removing build-
+# time package managers. The pre-owned mount point lets Docker initialize a fresh
+# named volume with UID/GID 1000.
+RUN apk upgrade --no-cache libcrypto3 libssl3 \
+    && rm -rf \
       /usr/local/lib/node_modules/npm \
       /usr/local/lib/node_modules/corepack \
       /usr/local/bin/npm \

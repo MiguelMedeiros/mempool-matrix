@@ -15,6 +15,8 @@ All notable changes to Mempool Matrix will be documented in this file.
 - Updated the development-only Browserslist dependency past two high-severity
   denial-of-service and malformed custom-stats advisories; full and production
   dependency audits are clean.
+- Upgraded the runtime Alpine OpenSSL libraries during image construction to fix
+  `CVE-2026-14456` in both supported architectures.
 
 ## [1.0.1] - 2026-08-15
 
