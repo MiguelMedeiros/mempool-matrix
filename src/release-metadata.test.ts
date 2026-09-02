@@ -16,10 +16,13 @@ const changelog = read("CHANGELOG.md");
 const readme = read("README.md");
 const dockerGuide = read("docs/docker.md");
 const releaseGuide = read("docs/releasing.md");
+const securityPolicy = read("SECURITY.md");
 const containerWorkflow = read(".github/workflows/container.yml");
 
 const releaseVersion = "1.0.1";
-const baselineReleaseTag = "v1.0.0";
+const publishedImage = `ghcr.io/miguelmedeiros/mempool-matrix:${releaseVersion}`;
+const publishedDigest = "sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42";
+const supportedReleaseLine = "1.0.x";
 const nodeBaseline = ">=22.22.0";
 
 describe("public release metadata contract", () => {
@@ -46,25 +49,28 @@ describe("public release metadata contract", () => {
     expect(changelog).not.toMatch(/private (?:tag|release|version|history)/i);
   });
 
-  it("documents the pre-tag source-build path and future immutable image workflow", () => {
+  it("documents current published-image and source-build workflows", () => {
     for (const document of [readme, dockerGuide]) {
-      expect(document).toMatch(/before the first public (?:SemVer )?tag/i);
-      expect(document).toMatch(/build from source|build the checkout locally/i);
-      expect(document).toMatch(/SemVer tags?\s+(?:publish|trigger)/i);
+      expect(document).toContain(publishedImage);
+      expect(document).toContain(publishedDigest);
+      expect(document).toMatch(/build from source|build the checkout locally|source build/i);
       expect(document).toMatch(/linux\/amd64.*linux\/arm64|multi-architecture/i);
       expect(document).toMatch(/SBOM/i);
       expect(document).toMatch(/provenance/i);
-      expect(document).not.toMatch(/docker pull\s+ghcr\.io/i);
+      expect(document).not.toMatch(/before the first public (?:SemVer )?tag/i);
     }
+    expect(readme).toContain(`MEMPOOL_MATRIX_IMAGE=${publishedImage}`);
+    expect(dockerGuide).toContain(`docker pull ${publishedImage}`);
+    expect(dockerGuide).toContain(`ghcr.io/miguelmedeiros/mempool-matrix@${publishedDigest}`);
+    expect(dockerGuide).toContain("${VERIFIED_INDEX_DIGEST}");
+    expect(dockerGuide).not.toContain("sha256:<");
     expect(readme).toContain("Node.js 22.22 or newer");
     expect(readme).toContain("node-%3E%3D22.22");
   });
 
-  it("keeps the release checklist gated and does not claim publication already happened", () => {
+  it("keeps a reusable release checklist with exact-revision verification", () => {
     for (const gate of [
-      "explicit approval",
-      "repository visibility",
-      baselineReleaseTag,
+      "SemVer",
       "workflow",
       "digest",
       "SBOM",
@@ -72,18 +78,27 @@ describe("public release metadata contract", () => {
       "GitHub Release",
       "package visibility",
       "production",
-      "site commit",
+      "revision",
       "Umbrel",
     ]) {
       expect(releaseGuide).toContain(gate);
     }
-    expect(releaseGuide).toMatch(/preserve (?:the )?existing tags/i);
-    expect(releaseGuide).toMatch(/after explicit approval/i);
+    expect(releaseGuide).toContain(`Current stable release: \`v${releaseVersion}\``);
+    expect(releaseGuide).toMatch(/preserve (?:all )?(?:existing|historical) tags/i);
+    expect(releaseGuide).not.toMatch(/1\.0\.0 candidate|before the first public tag/i);
     expect(releaseGuide).not.toMatch(/delete the old private tags/i);
-    expect(releaseGuide).not.toMatch(/has been published|is now public|official Umbrel/i);
+    expect(releaseGuide).not.toMatch(/official Umbrel/i);
   });
 
-  it("keeps workflow output aligned with the documented release candidate", () => {
+  it("documents the current supported release and private reporting path", () => {
+    expect(securityPolicy).toContain(`| ${supportedReleaseLine} |`);
+    expect(securityPolicy).toContain("GitHub private vulnerability reporting");
+    expect(securityPolicy).not.toMatch(/has not yet published|repository remains private/i);
+    expect(readme).toContain("GitHub private vulnerability reporting");
+    expect(readme).not.toMatch(/before the repository is published/i);
+  });
+
+  it("keeps workflow output aligned with the documented release workflow", () => {
     expect(containerWorkflow).toContain('tags: ["v*"]');
     expect(containerWorkflow).toContain("type=semver,pattern={{version}}");
     expect(containerWorkflow).toContain("platforms: linux/amd64,linux/arm64");

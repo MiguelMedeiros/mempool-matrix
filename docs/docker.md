@@ -1,17 +1,40 @@
 # Docker
 
-The repository includes a reproducible, source-build Dockerfile and Compose file.
-The final image uses Next.js standalone output and runs as UID/GID `1000:1000`.
-Its application payload is limited to the traced server, static assets, and
-public assets. The pinned Node-on-Alpine base and its standard Alpine utilities
-remain; npm, npx, Corepack, and Yarn are unavailable in the merged runtime
-filesystem. Before the first public tag, build from source instead of using an
-unverified registry reference. SemVer tags publish a GHCR multi-architecture
-image for `linux/amd64` and `linux/arm64` with an SBOM and provenance, but the
-result is usable only after the tagged workflow and immutable digest are
-verified.
+The repository includes a reproducible, source-build Dockerfile and Compose file,
+and the verified `1.0.1` release image is published at
+`ghcr.io/miguelmedeiros/mempool-matrix:1.0.1`. The final image uses Next.js
+standalone output and runs as UID/GID `1000:1000`. Its application payload is
+limited to the traced server, static assets, and public assets. The pinned
+Node-on-Alpine base and its standard Alpine utilities remain; npm, npx,
+Corepack, and Yarn are unavailable in the merged runtime filesystem. The
+published OCI index supports `linux/amd64` and `linux/arm64` and includes SBOM
+and provenance attestations.
 
-## Compose workflow
+## Published image workflow
+
+Clone the repository to use its Compose contract, pull the verified release,
+and start it without rebuilding:
+
+```bash
+git clone https://github.com/MiguelMedeiros/mempool-matrix.git
+cd mempool-matrix
+docker pull ghcr.io/miguelmedeiros/mempool-matrix:1.0.1
+MEMPOOL_MATRIX_IMAGE=ghcr.io/miguelmedeiros/mempool-matrix:1.0.1 \
+  docker compose up -d --no-build
+```
+
+Tags are convenient upgrade selectors, not immutable deployment identities. The
+verified `1.0.1` multi-architecture index digest is:
+
+```text
+ghcr.io/miguelmedeiros/mempool-matrix@sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42
+```
+
+For a reproducible deployment, set `MEMPOOL_MATRIX_IMAGE` to that full digest
+reference. Before using another release, verify its GitHub Release, successful
+Container workflow, package visibility, platforms, digest, SBOM, and provenance.
+
+## Source-build Compose workflow
 
 ```bash
 git clone https://github.com/MiguelMedeiros/mempool-matrix.git
@@ -207,13 +230,28 @@ a private deployment into the project file.
 
 ## Upgrade and rollback
 
-Record the Git commit and back up the named volume before upgrading:
+Back up the named volume before upgrading. For a published image, verify the new
+release digest, update `MEMPOOL_MATRIX_IMAGE`, pull it, and recreate only the app
+service:
+
+```bash
+VERIFIED_INDEX_DIGEST=sha256:replace-with-verified-index-digest
+export MEMPOOL_MATRIX_IMAGE="ghcr.io/miguelmedeiros/mempool-matrix@${VERIFIED_INDEX_DIGEST}"
+docker compose pull mempool-matrix
+docker compose up -d --no-build mempool-matrix
+```
+
+Keep the previous digest until health, logs, the UI, and persistence are verified.
+Rollback by restoring that previous `MEMPOOL_MATRIX_IMAGE` value and recreating
+the same service; the named volume remains attached.
+
+For a source build, record the Git commit before upgrading:
 
 ```bash
 git rev-parse HEAD
 git pull --ff-only
 docker compose build --pull
-docker compose up -d
+docker compose up -d mempool-matrix
 ```
 
 If the build fails, check out the recorded commit, rebuild, and recreate the
@@ -222,9 +260,17 @@ release notes before downgrading across versions.
 
 ## Image status
 
-Before the first public SemVer tag, no public registry artifact is claimed; use
-the local `docker compose up --build` path. SemVer tags publish GHCR images for
-`linux/amd64` and `linux/arm64` through the container workflow with an SBOM and
-provenance. A tag alone is not release evidence: confirm both architecture jobs,
-the publish job, package visibility, and the recorded immutable digest before
-documenting or deploying an image reference.
+Current stable release: `v1.0.1`. Its public GHCR image is
+`ghcr.io/miguelmedeiros/mempool-matrix:1.0.1`, and its verified immutable OCI
+index digest is
+`sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42`.
+The index contains `linux/amd64` and `linux/arm64` images plus their attestation
+manifests.
+
+Every strict SemVer tag triggers the Container workflow. A tag alone is not
+release evidence: confirm both architecture validation jobs, the publish job,
+anonymous package visibility, the recorded immutable digest, SBOM, provenance,
+and GitHub Release before documenting or deploying a new image. Treat the
+[latest release](https://github.com/MiguelMedeiros/mempool-matrix/releases/latest)
+and its workflow as the source of truth rather than copying this version into
+automation.

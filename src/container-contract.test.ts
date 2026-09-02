@@ -79,6 +79,7 @@ describe("standalone container contract", () => {
     expect(runner).toContain("/app/.next/static ./.next/static");
     expect(runner).toContain("/app/public ./public");
     expect(runner).not.toContain("/app/package-lock.json");
+    expect(runner).toContain("apk upgrade --no-cache libcrypto3 libssl3");
     expect(runner).toContain("/usr/local/lib/node_modules/npm");
     expect(runner).toContain("/opt/yarn");
     expect(runner).toContain("USER 1000:1000");
