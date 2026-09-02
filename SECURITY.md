@@ -2,17 +2,19 @@
 
 ## Supported versions
 
-Mempool Matrix has not yet published its first public stable release. Security
-fixes are developed against the current default branch. This section will be
-updated with a version support table when public releases exist.
+Security fixes are developed against the current default branch and released on
+the supported stable line:
+
+| Version | Supported |
+| --- | --- |
+| 1.0.x | Yes |
+| < 1.0 | No |
 
 ## Reporting a vulnerability
 
-Private vulnerability reporting will be enabled and verified before the
-repository is published. Until this policy names a verified reporting path, do
-not disclose a suspected vulnerability in a public issue, discussion, pull
-request, commit, or social post. While the repository remains private, use only
-an existing private repository or maintainer channel.
+Use [GitHub private vulnerability reporting](https://github.com/MiguelMedeiros/mempool-matrix/security/advisories/new)
+to report a suspected vulnerability. Do not disclose it in a public issue,
+discussion, pull request, commit, or social post.
 
 A useful private report includes:
 

@@ -16,11 +16,13 @@ const changelog = read("CHANGELOG.md");
 const readme = read("README.md");
 const dockerGuide = read("docs/docker.md");
 const releaseGuide = read("docs/releasing.md");
+const securityPolicy = read("SECURITY.md");
 const containerWorkflow = read(".github/workflows/container.yml");
 
 const releaseVersion = "1.0.1";
 const publishedImage = `ghcr.io/miguelmedeiros/mempool-matrix:${releaseVersion}`;
 const publishedDigest = "sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42";
+const supportedReleaseLine = "1.0.x";
 const nodeBaseline = ">=22.22.0";
 
 describe("public release metadata contract", () => {
@@ -60,6 +62,8 @@ describe("public release metadata contract", () => {
     expect(readme).toContain(`MEMPOOL_MATRIX_IMAGE=${publishedImage}`);
     expect(dockerGuide).toContain(`docker pull ${publishedImage}`);
     expect(dockerGuide).toContain(`ghcr.io/miguelmedeiros/mempool-matrix@${publishedDigest}`);
+    expect(dockerGuide).toContain("${VERIFIED_INDEX_DIGEST}");
+    expect(dockerGuide).not.toContain("sha256:<");
     expect(readme).toContain("Node.js 22.22 or newer");
     expect(readme).toContain("node-%3E%3D22.22");
   });
@@ -86,7 +90,15 @@ describe("public release metadata contract", () => {
     expect(releaseGuide).not.toMatch(/official Umbrel/i);
   });
 
-  it("keeps workflow output aligned with the documented release candidate", () => {
+  it("documents the current supported release and private reporting path", () => {
+    expect(securityPolicy).toContain(`| ${supportedReleaseLine} |`);
+    expect(securityPolicy).toContain("GitHub private vulnerability reporting");
+    expect(securityPolicy).not.toMatch(/has not yet published|repository remains private/i);
+    expect(readme).toContain("GitHub private vulnerability reporting");
+    expect(readme).not.toMatch(/before the repository is published/i);
+  });
+
+  it("keeps workflow output aligned with the documented release workflow", () => {
     expect(containerWorkflow).toContain('tags: ["v*"]');
     expect(containerWorkflow).toContain("type=semver,pattern={{version}}");
     expect(containerWorkflow).toContain("platforms: linux/amd64,linux/arm64");

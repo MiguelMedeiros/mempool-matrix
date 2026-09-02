@@ -4,6 +4,18 @@ All notable changes to Mempool Matrix will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- Replaced pre-release container guidance with verified published-image,
+  digest-pinning, source-build, reusable release, and private security-reporting
+  workflows.
+
+### Security
+
+- Updated the development-only Browserslist dependency past two high-severity
+  denial-of-service and malformed custom-stats advisories; full and production
+  dependency audits are clean.
+
 ## [1.0.1] - 2026-08-15
 
 ### Security

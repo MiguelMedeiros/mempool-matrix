@@ -44,16 +44,25 @@ node, or source of fee guarantees.
 
 ### Docker Compose
 
-Clone the repository and build the current image locally:
-
-Before the first public SemVer tag, build from source as shown below. SemVer tags
-publish a GHCR multi-architecture image for `linux/amd64` and `linux/arm64` with
-an SBOM and provenance; verify the release workflow and immutable digest before
-using a future registry artifact.
+Clone the repository, then start the verified `1.0.1` multi-architecture image:
 
 ```bash
 git clone https://github.com/MiguelMedeiros/mempool-matrix.git
 cd mempool-matrix
+MEMPOOL_MATRIX_IMAGE=ghcr.io/miguelmedeiros/mempool-matrix:1.0.1 docker compose up -d --no-build
+```
+
+The release image supports `linux/amd64` and `linux/arm64` and includes SBOM and
+provenance attestations. Its immutable index digest is
+`sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42`.
+Check the current [GitHub Release](https://github.com/MiguelMedeiros/mempool-matrix/releases/latest)
+and [Container workflow](https://github.com/MiguelMedeiros/mempool-matrix/actions/workflows/container.yml)
+before deployment; use the digest-pinned example in the
+[Docker guide](docs/docker.md) when reproducibility matters.
+
+To build from source using the checked-out code instead:
+
+```bash
 docker compose up -d --build
 ```
 
@@ -135,10 +144,10 @@ tests, screenshots, and commits.
 
 ## Security
 
-Do not disclose a suspected vulnerability publicly. [SECURITY.md](SECURITY.md)
-records the reporting status; a verified private path will be listed before the
-repository is published. Deployment assumptions and implemented controls are in
-[docs/security.md](docs/security.md).
+Do not disclose a suspected vulnerability publicly. Use
+[GitHub private vulnerability reporting](https://github.com/MiguelMedeiros/mempool-matrix/security/advisories/new)
+as described in [SECURITY.md](SECURITY.md). Deployment assumptions and
+implemented controls are in [docs/security.md](docs/security.md).
 
 ## License
 
