@@ -2,7 +2,7 @@
 
 All notable changes to Mempool Matrix will be documented in this file.
 
-## Unreleased
+## [1.0.2] - 2026-09-09
 
 ### Changed
 

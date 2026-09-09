@@ -19,24 +19,25 @@ const releaseGuide = read("docs/releasing.md");
 const securityPolicy = read("SECURITY.md");
 const containerWorkflow = read(".github/workflows/container.yml");
 
-const releaseVersion = "1.0.1";
-const publishedImage = `ghcr.io/miguelmedeiros/mempool-matrix:${releaseVersion}`;
+const sourceVersion = "1.0.2";
+const publishedVersion = "1.0.1";
+const publishedImage = `ghcr.io/miguelmedeiros/mempool-matrix:${publishedVersion}`;
 const publishedDigest = "sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42";
 const supportedReleaseLine = "1.0.x";
 const nodeBaseline = ">=22.22.0";
 
 describe("public release metadata contract", () => {
   it("aligns application and lockfile metadata without enabling npm publication", () => {
-    expect(packageJson.version).toBe(releaseVersion);
-    expect(packageLock.version).toBe(releaseVersion);
-    expect(packageLock.packages[""].version).toBe(releaseVersion);
+    expect(packageJson.version).toBe(sourceVersion);
+    expect(packageLock.version).toBe(sourceVersion);
+    expect(packageLock.packages[""].version).toBe(sourceVersion);
     expect(packageJson.private).toBe(true);
     expect(packageJson.engines.node).toBe(nodeBaseline);
     expect(packageLock.packages[""].engines.node).toBe(nodeBaseline);
   });
 
   it("records the current security patch and preserves the public baseline", () => {
-    expect(changelog).toContain(`## [${releaseVersion}] - 2026-08-15`);
+    expect(changelog).toContain(`## [${sourceVersion}] - 2026-09-09`);
     expect(changelog).toMatch(/js-yaml/i);
     expect(changelog).toMatch(/brace-expansion/i);
     expect(changelog).toMatch(/nanoid/i);
@@ -83,7 +84,7 @@ describe("public release metadata contract", () => {
     ]) {
       expect(releaseGuide).toContain(gate);
     }
-    expect(releaseGuide).toContain(`Current stable release: \`v${releaseVersion}\``);
+    expect(releaseGuide).toContain(`Current stable release: \`v${publishedVersion}\``);
     expect(releaseGuide).toMatch(/preserve (?:all )?(?:existing|historical) tags/i);
     expect(releaseGuide).not.toMatch(/1\.0\.0 candidate|before the first public tag/i);
     expect(releaseGuide).not.toMatch(/delete the old private tags/i);
