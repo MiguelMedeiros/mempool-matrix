@@ -1,8 +1,8 @@
 # Docker
 
 The repository includes a reproducible, source-build Dockerfile and Compose file,
-and the verified `1.0.1` release image is published at
-`ghcr.io/miguelmedeiros/mempool-matrix:1.0.1`. The final image uses Next.js
+and the verified `1.0.2` release image is published at
+`ghcr.io/miguelmedeiros/mempool-matrix:1.0.2`. The final image uses Next.js
 standalone output and runs as UID/GID `1000:1000`. Its application payload is
 limited to the traced server, static assets, and public assets. The pinned
 Node-on-Alpine base and its standard Alpine utilities remain; npm, npx,
@@ -18,16 +18,16 @@ and start it without rebuilding:
 ```bash
 git clone https://github.com/MiguelMedeiros/mempool-matrix.git
 cd mempool-matrix
-docker pull ghcr.io/miguelmedeiros/mempool-matrix:1.0.1
-MEMPOOL_MATRIX_IMAGE=ghcr.io/miguelmedeiros/mempool-matrix:1.0.1 \
+docker pull ghcr.io/miguelmedeiros/mempool-matrix:1.0.2
+MEMPOOL_MATRIX_IMAGE=ghcr.io/miguelmedeiros/mempool-matrix:1.0.2 \
   docker compose up -d --no-build
 ```
 
 Tags are convenient upgrade selectors, not immutable deployment identities. The
-verified `1.0.1` multi-architecture index digest is:
+verified `1.0.2` multi-architecture index digest is:
 
 ```text
-ghcr.io/miguelmedeiros/mempool-matrix@sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42
+ghcr.io/miguelmedeiros/mempool-matrix@sha256:ddcb25c122d37140fe6ea7f7fc090ffc0f2935480fb95ada227ecd492d575630
 ```
 
 For a reproducible deployment, set `MEMPOOL_MATRIX_IMAGE` to that full digest
@@ -260,10 +260,10 @@ release notes before downgrading across versions.
 
 ## Image status
 
-Current stable release: `v1.0.1`. Its public GHCR image is
-`ghcr.io/miguelmedeiros/mempool-matrix:1.0.1`, and its verified immutable OCI
+Current stable release: `v1.0.2`. Its public GHCR image is
+`ghcr.io/miguelmedeiros/mempool-matrix:1.0.2`, and its verified immutable OCI
 index digest is
-`sha256:1dd72c603989dfa53c1089136c6aafca006de815b95545283ec0ee8ab26cab42`.
+`sha256:ddcb25c122d37140fe6ea7f7fc090ffc0f2935480fb95ada227ecd492d575630`.
 The index contains `linux/amd64` and `linux/arm64` images plus their attestation
 manifests.
 
