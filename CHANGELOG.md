@@ -2,7 +2,7 @@
 
 All notable changes to Mempool Matrix will be documented in this file.
 
-## Unreleased
+## [1.0.2] - 2026-09-09
 
 ### Changed
 
@@ -12,6 +12,9 @@ All notable changes to Mempool Matrix will be documented in this file.
 
 ### Security
 
+- Upgraded Next.js to 16.3.4 and Sharp to 0.35.4 to remediate remote-code-
+  execution and image-processing advisories; refreshed Vitest and pinned the
+  fixed `js-yaml` release so full and production dependency audits return zero.
 - Updated the development-only Browserslist dependency past two high-severity
   denial-of-service and malformed custom-stats advisories; full and production
   dependency audits are clean.
