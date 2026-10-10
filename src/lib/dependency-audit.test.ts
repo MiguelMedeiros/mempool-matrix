@@ -4,14 +4,16 @@ import {
   parseAuditJson,
 } from "../../scripts/dependency-audit.mjs";
 
+// braces has no patched release (GHSA-vfj7-8cjw-p6xm, range <=3.0.3). It only
+// reaches the lint toolchain through eslint-config-next -> fast-glob.
 const allowedAdvisory = {
-  source: 1124334,
-  name: "brace-expansion",
-  dependency: "brace-expansion",
-  title: "brace-expansion denial of service",
-  url: "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+  source: 1240992,
+  name: "braces",
+  dependency: "braces",
+  title: "braces vulnerable to stack-exhaustion denial of service",
+  url: "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
   severity: "high",
-  range: "<=5.0.7",
+  range: "<=3.0.3",
 };
 
 type SeverityCounts = {
@@ -57,38 +59,45 @@ const cleanAudit = audit();
 
 const currentAllowedAudit = audit(
   {
-    "brace-expansion": {
-      name: "brace-expansion",
+    braces: {
+      name: "braces",
       severity: "high",
       via: [allowedAdvisory],
     },
-    minimatch: {
-      name: "minimatch",
+    micromatch: {
+      name: "micromatch",
       severity: "high",
-      via: ["brace-expansion"],
+      via: ["braces"],
     },
-    eslint: {
-      name: "eslint",
+    "fast-glob": {
+      name: "fast-glob",
       severity: "high",
-      via: ["minimatch"],
+      via: ["micromatch"],
+    },
+    "@next/eslint-plugin-next": {
+      name: "@next/eslint-plugin-next",
+      severity: "high",
+      via: ["fast-glob"],
+    },
+    "eslint-config-next": {
+      name: "eslint-config-next",
+      severity: "high",
+      via: ["@next/eslint-plugin-next"],
     },
   },
-  { info: 0, low: 0, moderate: 0, high: 3, critical: 0, total: 3 },
+  { info: 0, low: 0, moderate: 0, high: 5, critical: 0, total: 5 },
 );
 
 const allowedLock = {
   packages: {
     "": { name: "fixture" },
-    "node_modules/brace-expansion": { version: "5.0.8" },
-    "node_modules/eslint/node_modules/brace-expansion": { version: "1.1.16" },
+    "node_modules/braces": { version: "3.0.3", dev: true },
   },
 };
 
 const fixedLock = {
   packages: {
     "": { name: "fixture" },
-    "node_modules/brace-expansion": { version: "5.0.9" },
-    "node_modules/eslint/node_modules/brace-expansion": { version: "1.1.18" },
   },
 };
 
@@ -97,13 +106,49 @@ function evaluate(full: unknown, production: unknown = cleanAudit, lock: unknown
 }
 
 describe("dependency audit gate", () => {
-  it("allows only the current brace-expansion backport false positive", () => {
+  it("allows only the current dev-only braces finding without an upstream fix", () => {
     const result = evaluate(currentAllowedAudit);
 
     expect(result.ok).toBe(true);
     expect(result.actionableHighCritical).toBe(0);
     expect(result.allowlistedFalsePositives).toBe(1);
-    expect(result.braceExpansionVersions).toEqual(["1.1.16", "5.0.8"]);
+    expect(result.allowlistedPackageVersions).toEqual(["3.0.3"]);
+  });
+
+  it("no longer allows the retired brace-expansion range exception", () => {
+    const retired = audit(
+      {
+        "brace-expansion": {
+          name: "brace-expansion",
+          severity: "high",
+          via: [
+            {
+              source: 1124334,
+              name: "brace-expansion",
+              dependency: "brace-expansion",
+              url: "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+              severity: "high",
+              range: "<=5.0.7",
+            },
+          ],
+        },
+      },
+      { info: 0, low: 0, moderate: 0, high: 1, critical: 0, total: 1 },
+    );
+
+    expect(evaluate(retired)).toMatchObject({ ok: false });
+  });
+
+  it("fails when the allowlisted package is installed for production", () => {
+    const productionLock = structuredClone(allowedLock) as {
+      packages: Record<string, Record<string, unknown>>;
+    };
+    delete productionLock.packages["node_modules/braces"].dev;
+
+    const result = evaluate(currentAllowedAudit, cleanAudit, productionLock);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.join(" ")).toMatch(/braces.*development-only/i);
   });
 
   it("fails for an unrelated high advisory", () => {
@@ -133,9 +178,9 @@ describe("dependency audit gate", () => {
 
   it("never allows a critical vulnerability", () => {
     const critical = structuredClone(currentAllowedAudit);
-    critical.vulnerabilities["brace-expansion"].severity = "critical";
+    critical.vulnerabilities.braces.severity = "critical";
     (
-      critical.vulnerabilities["brace-expansion"].via[0] as Record<
+      critical.vulnerabilities.braces.via[0] as Record<
         string,
         unknown
       >
@@ -144,9 +189,9 @@ describe("dependency audit gate", () => {
       info: 0,
       low: 0,
       moderate: 0,
-      high: 2,
+      high: 4,
       critical: 1,
-      total: 3,
+      total: 5,
     };
 
     const result = evaluate(critical);
@@ -155,16 +200,14 @@ describe("dependency audit gate", () => {
     expect(result.actionableHighCritical).toBeGreaterThan(0);
   });
 
-  it("fails when any installed brace-expansion version is not allowlisted", () => {
+  it("fails when an installed braces version is not allowlisted", () => {
     const vulnerableLock = structuredClone(allowedLock);
-    vulnerableLock.packages[
-      "node_modules/eslint/node_modules/brace-expansion"
-    ].version = "1.1.12";
+    vulnerableLock.packages["node_modules/braces"].version = "3.0.2";
 
     const result = evaluate(currentAllowedAudit, cleanAudit, vulnerableLock);
 
     expect(result.ok).toBe(false);
-    expect(result.errors.join(" ")).toContain("1.1.12");
+    expect(result.errors.join(" ")).toContain("3.0.2");
   });
 
   it("fails closed for malformed audit JSON", () => {
@@ -184,13 +227,13 @@ describe("dependency audit gate", () => {
     });
   });
 
-  it("passes clean audits with patched brace-expansion versions", () => {
+  it("passes clean audits once braces is no longer installed", () => {
     const result = evaluate(cleanAudit, cleanAudit, fixedLock);
 
     expect(result).toMatchObject({
       ok: true,
       actionableHighCritical: 0,
-      braceExpansionVersions: ["1.1.18", "5.0.9"],
+      allowlistedPackageVersions: [],
     });
   });
 
@@ -251,12 +294,12 @@ describe("dependency audit gate", () => {
 
   it.each([
     ["missing source", "source", undefined],
-    ["different source", "source", 1124335],
+    ["different source", "source", 1240993],
     ["missing range", "range", undefined],
-    ["different range", "range", "<5.0.8"],
+    ["different range", "range", "<3.0.4"],
   ])("rejects the allowlisted advisory with %s", (_description, field, value) => {
     const mutated = structuredClone(currentAllowedAudit);
-    const advisory = mutated.vulnerabilities["brace-expansion"].via[0] as Record<
+    const advisory = mutated.vulnerabilities.braces.via[0] as Record<
       string,
       unknown
     >;
@@ -271,7 +314,7 @@ describe("dependency audit gate", () => {
 
   it("fails when an aggregate string does not resolve to an advisory", () => {
     const broken = structuredClone(currentAllowedAudit);
-    broken.vulnerabilities.minimatch.via = ["missing-finding"];
+    broken.vulnerabilities.micromatch.via = ["missing-finding"];
 
     expect(evaluate(broken).ok).toBe(false);
   });
@@ -291,7 +334,7 @@ describe("dependency audit gate", () => {
       ],
     };
     drifted.metadata.vulnerabilities.moderate = 1;
-    drifted.metadata.vulnerabilities.total = 4;
+    drifted.metadata.vulnerabilities.total = 6;
 
     expect(evaluate(drifted).ok).toBe(false);
   });

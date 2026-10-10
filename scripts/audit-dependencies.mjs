@@ -5,9 +5,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { evaluateDependencyAudits, parseAuditJson } from "./dependency-audit.mjs";
 
-// npm currently flags the corrected brace-expansion 1.1.16 backport because the
-// upstream range in https://github.com/advisories/GHSA-mh99-v99m-4gvg is <=5.0.7.
-// Keep this exception exact and fail closed on any advisory or lockfile drift.
+// The single exact upstream exception (no patched braces release) lives in
+// dependency-audit.mjs; any other advisory or lockfile drift fails closed.
 function runAudit(args, label) {
   const result = spawnSync("npm", ["audit", ...args, "--json"], {
     encoding: "utf8",
@@ -47,7 +46,7 @@ export function main() {
       `Production audit counts: ${formatCounts(evaluation.productionCounts)}`,
     );
     console.log(
-      `brace-expansion lock versions: ${evaluation.braceExpansionVersions.join(", ")}`,
+      `allowlisted package lock versions: ${evaluation.allowlistedPackageVersions.join(", ") || "none"}`,
     );
 
     if (!evaluation.ok) {
