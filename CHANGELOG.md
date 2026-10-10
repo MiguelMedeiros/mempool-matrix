@@ -2,6 +2,18 @@
 
 All notable changes to Mempool Matrix will be documented in this file.
 
+## [Unreleased]
+
+### Security
+
+- Upgraded Next.js to 16.3.8 to remediate the critical `next/og`
+  remote-code-execution advisory and the image-optimization SSRF advisory.
+- Upgraded Sharp to 0.35.5 (librsvg CVE), pinned `source-map-js` 1.2.2, and
+  refreshed transitive `brace-expansion` releases; the production audit is zero.
+- Replaced the retired `brace-expansion` audit exception with one exact,
+  development-only exception for `braces` (GHSA-vfj7-8cjw-p6xm), which has no
+  patched release and is reachable only from the lint toolchain.
+
 ## [1.0.2] - 2026-09-09
 
 ### Changed

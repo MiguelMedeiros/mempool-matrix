@@ -1,15 +1,12 @@
+// braces has no patched release for GHSA-vfj7-8cjw-p6xm (<=3.0.3). It is only
+// reachable from the lint toolchain (eslint-config-next -> fast-glob ->
+// micromatch), so the exception is exact, development-only, and fails closed.
 const ALLOWED_ADVISORY_URL =
-  "https://github.com/advisories/GHSA-mh99-v99m-4gvg";
-const ALLOWED_ADVISORY_SOURCE = 1124334;
-const ALLOWED_ADVISORY_RANGE = "<=5.0.7";
-const ALLOWED_PACKAGE = "brace-expansion";
-const ALLOWED_BRACE_EXPANSION_VERSIONS = new Set([
-  "1.1.16",
-  "1.1.18",
-  "2.1.2",
-  "5.0.8",
-  "5.0.9",
-]);
+  "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm";
+const ALLOWED_ADVISORY_SOURCE = 1240992;
+const ALLOWED_ADVISORY_RANGE = "<=3.0.3";
+const ALLOWED_PACKAGE = "braces";
+const ALLOWED_PACKAGE_VERSIONS = new Set(["3.0.3"]);
 const SEVERITIES = ["info", "low", "moderate", "high", "critical"];
 
 function isRecord(value) {
@@ -77,28 +74,27 @@ export function parseAuditJson(text, label = "npm audit") {
   return validateAudit(parsed, label);
 }
 
-function readBraceExpansionVersions(lock) {
+function readAllowedPackageInstalls(lock) {
   if (!isRecord(lock) || !isRecord(lock.packages)) {
     throw new Error("package-lock.json: missing packages object");
   }
 
-  const versions = [];
+  const installs = [];
+  const pattern = new RegExp(`(^|/)node_modules/${ALLOWED_PACKAGE}$`);
   for (const [path, entry] of Object.entries(lock.packages)) {
-    if (
-      /(^|\/)node_modules\/brace-expansion$/.test(path) &&
-      isRecord(entry)
-    ) {
+    if (pattern.test(path) && isRecord(entry)) {
       if (typeof entry.version !== "string") {
         throw new Error(`package-lock.json: missing version for ${path}`);
       }
-      versions.push(entry.version);
+      installs.push({ path, version: entry.version, dev: entry.dev === true });
     }
   }
-  if (versions.length === 0) {
-    throw new Error("package-lock.json: no brace-expansion installation found");
-  }
-  return [...new Set(versions)].sort((left, right) =>
-    left.localeCompare(right, undefined, { numeric: true }),
+  return installs;
+}
+
+function sortedVersions(installs) {
+  return [...new Set(installs.map((install) => install.version))].sort(
+    (left, right) => left.localeCompare(right, undefined, { numeric: true }),
   );
 }
 
@@ -196,7 +192,8 @@ function inspectFullHighFindings(report) {
 export function evaluateDependencyAudits(fullValue, productionValue, lock) {
   const full = validateAudit(fullValue, "full audit");
   const production = validateAudit(productionValue, "production audit");
-  const braceExpansionVersions = readBraceExpansionVersions(lock);
+  const allowedInstalls = readAllowedPackageInstalls(lock);
+  const allowlistedPackageVersions = sortedVersions(allowedInstalls);
   const errors = [];
 
   const productionActionable = countActionableProduction(production);
@@ -212,13 +209,20 @@ export function evaluateDependencyAudits(fullValue, productionValue, lock) {
   const fullInspection = inspectFullHighFindings(full);
   errors.push(...fullInspection.errors);
 
-  const disallowedVersions = braceExpansionVersions.filter(
-    (version) => !ALLOWED_BRACE_EXPANSION_VERSIONS.has(version),
+  const disallowedVersions = allowlistedPackageVersions.filter(
+    (version) => !ALLOWED_PACKAGE_VERSIONS.has(version),
   );
   if (disallowedVersions.length > 0) {
     errors.push(
-      `package-lock.json: non-allowlisted brace-expansion version(s): ${disallowedVersions.join(", ")}`,
+      `package-lock.json: non-allowlisted ${ALLOWED_PACKAGE} version(s): ${disallowedVersions.join(", ")}`,
     );
+  }
+  for (const install of allowedInstalls) {
+    if (!install.dev) {
+      errors.push(
+        `package-lock.json: ${ALLOWED_PACKAGE} at ${install.path} must stay development-only`,
+      );
+    }
   }
 
   const hasFullHigh = full.metadata.vulnerabilities.high > 0;
@@ -243,7 +247,7 @@ export function evaluateDependencyAudits(fullValue, productionValue, lock) {
       fullInspection.allowedAdvisories.size === 1
         ? 1
         : 0,
-    braceExpansionVersions,
+    allowlistedPackageVersions,
     fullCounts: { ...full.metadata.vulnerabilities },
     productionCounts: { ...production.metadata.vulnerabilities },
   };
