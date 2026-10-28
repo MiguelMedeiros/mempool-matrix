@@ -44,17 +44,17 @@ node, or source of fee guarantees.
 
 ### Docker Compose
 
-Clone the repository, then start the verified `1.0.3` multi-architecture image:
+Clone the repository, then start the verified `1.0.4` multi-architecture image:
 
 ```bash
 git clone https://github.com/MiguelMedeiros/mempool-matrix.git
 cd mempool-matrix
-MEMPOOL_MATRIX_IMAGE=ghcr.io/miguelmedeiros/mempool-matrix:1.0.3 docker compose up -d --no-build
+MEMPOOL_MATRIX_IMAGE=ghcr.io/miguelmedeiros/mempool-matrix:1.0.4 docker compose up -d --no-build
 ```
 
 The release image supports `linux/amd64` and `linux/arm64` and includes SBOM and
 provenance attestations. Its immutable index digest is
-`sha256:075a79c96aa3df196fcf4981048ebe5b5289fe53174f0da8fea26553d5b0a306`.
+`sha256:8184551e488384b00d7f128c9990c96acc9030cfaa78c7cfe12865fcb5a0ec10`.
 Check the current [GitHub Release](https://github.com/MiguelMedeiros/mempool-matrix/releases/latest)
 and [Container workflow](https://github.com/MiguelMedeiros/mempool-matrix/actions/workflows/container.yml)
 before deployment; use the digest-pinned example in the
