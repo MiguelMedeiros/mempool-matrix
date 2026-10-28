@@ -19,7 +19,7 @@ const releaseGuide = read("docs/releasing.md");
 const securityPolicy = read("SECURITY.md");
 const containerWorkflow = read(".github/workflows/container.yml");
 
-const sourceVersion = "1.0.3";
+const sourceVersion = "1.0.4";
 const publishedVersion = "1.0.3";
 const publishedImage = `ghcr.io/miguelmedeiros/mempool-matrix:${publishedVersion}`;
 const publishedDigest = "sha256:075a79c96aa3df196fcf4981048ebe5b5289fe53174f0da8fea26553d5b0a306";
@@ -37,9 +37,10 @@ describe("public release metadata contract", () => {
   });
 
   it("records the current security patch and preserves the public baseline", () => {
-    expect(changelog).toContain(`## [${sourceVersion}] - 2026-10-14`);
+    expect(changelog).toContain(`## [${sourceVersion}] - 2026-10-28`);
     expect(changelog).toMatch(/next\.js/i);
-    expect(changelog).toMatch(/sharp/i);
+    expect(changelog).toMatch(/zod/i);
+    expect(changelog).toContain("## [1.0.3] - 2026-10-14");
     expect(changelog).toContain("## [1.0.2] - 2026-09-09");
     expect(changelog).toContain("## [1.0.0] - 2026-07-27");
     expect(changelog).toMatch(/visualiz|visual experience/i);

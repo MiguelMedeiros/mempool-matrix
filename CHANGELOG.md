@@ -2,6 +2,21 @@
 
 All notable changes to Mempool Matrix will be documented in this file.
 
+## [1.0.4] - 2026-10-28
+
+### Security
+
+- Upgraded Next.js to 16.4.3 to remediate two critical unauthenticated
+  remote-code-execution advisories (SVG image optimization on glibc-based
+  Linux, and `use cache` typed-array deserialization) and a high-severity
+  Server Actions denial-of-service advisory.
+- Upgraded `eslint-config-next` to 16.4.3, which resolves the transitive
+  `zod` high-severity denial-of-service advisory in the lint toolchain.
+- Upgraded Vitest and `@vitest/coverage-v8` to 4.1.12, fixing the
+  `@vitest/mocker` medium-severity advisory that Dependabot's automatic
+  security update could not resolve due to a pinned-version conflict.
+- Full and production dependency audits are zero.
+
 ## [1.0.3] - 2026-10-14
 
 ### Security
