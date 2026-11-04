@@ -2,6 +2,21 @@
 
 All notable changes to Mempool Matrix will be documented in this file.
 
+## [Unreleased]
+
+### Security
+
+- Upgraded Next.js and `eslint-config-next` to 16.4.5, the November 2026
+  security release, which fixes a high-severity cross-tenant cache
+  disclosure when `unstable_cache` and `use cache` are combined, three
+  medium-severity cache/response-framing disclosure advisories, and an
+  SVG-rejection bypass in Image Optimization. Mempool Matrix does not use
+  `unstable_cache`/`use cache` or `dangerouslyAllowSVG`, so none of the
+  affected patterns are reachable, but the framework dependency is patched
+  as defense in depth.
+- Full and production dependency audits remain unaffected (8 pre-existing
+  dev-only moderate findings in the lint toolchain, 0 in production).
+
 ## [1.0.4] - 2026-10-28
 
 ### Security
