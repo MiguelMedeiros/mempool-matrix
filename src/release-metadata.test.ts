@@ -20,9 +20,9 @@ const securityPolicy = read("SECURITY.md");
 const containerWorkflow = read(".github/workflows/container.yml");
 
 const sourceVersion = "1.0.5";
-const publishedVersion = "1.0.4";
+const publishedVersion = "1.0.5";
 const publishedImage = `ghcr.io/miguelmedeiros/mempool-matrix:${publishedVersion}`;
-const publishedDigest = "sha256:8184551e488384b00d7f128c9990c96acc9030cfaa78c7cfe12865fcb5a0ec10";
+const publishedDigest = "sha256:876582f4f5c5f3fe9fd6091cae4f1da7d7dee6795619def791d06b096c25cdfa";
 const supportedReleaseLine = "1.0.x";
 const nodeBaseline = ">=22.22.0";
 
