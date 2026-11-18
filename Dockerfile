@@ -36,10 +36,10 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
-# Patch runtime TLS libraries from the pinned Alpine line before removing build-
-# time package managers. The pre-owned mount point lets Docker initialize a fresh
-# named volume with UID/GID 1000.
-RUN apk upgrade --no-cache libcrypto3 libssl3 \
+# Patch runtime libraries (TLS, libc, zlib) from the pinned Alpine line before
+# removing build-time package managers. The pre-owned mount point lets Docker
+# initialize a fresh named volume with UID/GID 1000.
+RUN apk upgrade --no-cache libcrypto3 libssl3 musl musl-utils zlib \
     && rm -rf \
       /usr/local/lib/node_modules/npm \
       /usr/local/lib/node_modules/corepack \
