@@ -2,6 +2,21 @@
 
 All notable changes to Mempool Matrix will be documented in this file.
 
+## [1.0.6] - 2026-11-25
+
+### Security
+
+- Upgraded Next.js and `eslint-config-next` to 16.4.6, a patch release that
+  backports Turbopack dev garbage-collection fixes and automatic route
+  handler response compression. No application code changes were required.
+- Patched the pinned `node:22.23.1-alpine3.23` runtime image to remediate
+  Trivy-flagged HIGH findings CVE-2026-107891 (musl `regcomp` overflow) and
+  CVE-2026-85091 (zlib `gz_vacate` heap overflow) by extending the existing
+  targeted `apk upgrade` to cover `musl`, `musl-utils`, and `zlib` alongside
+  `libcrypto3`/`libssl3`.
+- Full and production dependency audits remain unaffected (7 pre-existing
+  dev-only moderate findings in the lint toolchain, 0 in production).
+
 ## [1.0.5] - 2026-11-04
 
 ### Security
