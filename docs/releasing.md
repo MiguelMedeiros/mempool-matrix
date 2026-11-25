@@ -1,6 +1,6 @@
 # Releasing
 
-Current stable release: `v1.0.5`.
+Current stable release: `v1.0.6`.
 
 This checklist applies to every release after the public `1.0.0` baseline. The
 GitHub Releases page and the Container workflow are the current source of truth;
@@ -54,11 +54,11 @@ upgrade target.
 
 ## Current release evidence
 
-The `v1.0.5` release publishes
-`ghcr.io/miguelmedeiros/mempool-matrix:1.0.5` as a multi-architecture OCI index:
+The `v1.0.6` release publishes
+`ghcr.io/miguelmedeiros/mempool-matrix:1.0.6` as a multi-architecture OCI index:
 
 ```text
-sha256:876582f4f5c5f3fe9fd6091cae4f1da7d7dee6795619def791d06b096c25cdfa
+sha256:5e7eeba4031830380dc3c459b95388138c1a1dff2f77a02d7b65192ccadd403d
 ```
 
 Verify newer releases from their GitHub Release and exact tag workflow instead
